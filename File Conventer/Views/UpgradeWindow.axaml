@@ -1,0 +1,34 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:File_Conventer.ViewModels" x:Class="File_Conventer.Views.UpgradeWindow"
+        x:DataType="vm:MainViewModel" Title="{Binding L[UpgradeWindowTitle]}" Width="450" Height="450" MinWidth="450" MinHeight="300"
+        WindowStartupLocation="CenterScreen" Icon="/Assets/application.ico">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="5">
+    <TextBlock Text="{Binding UpdateStatus}" TextWrapping="Wrap" Margin="0,0,0,10"/>
+    <TextBox Grid.Row="1" Text="{Binding ReleaseNotes}" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"/>
+    <Button Grid.Row="2" Command="{Binding DownloadUpdateCommand}" IsVisible="{Binding CanDownloadUpdate}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="10,5" Margin="0,5">
+      <Grid ColumnDefinitions="64,*">
+        <Image Source="/Assets/DownloadIcon.png" Width="64" Height="64"/>
+        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+          <TextBlock Text="{Binding L[DownloadAndInstallButtonTitle]}" FontSize="14.667" TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding L[DownloadAndInstallButtonDescription]}" FontSize="10.667" TextWrapping="Wrap" Margin="0,5,0,0"/>
+        </StackPanel>
+      </Grid>
+    </Button>
+    <Grid Grid.Row="2" ColumnDefinitions="64,*" IsVisible="{Binding IsUpdateDownloading}" Margin="0,5">
+      <Image Source="/Assets/DownloadIcon.png" Width="64" Height="64"/>
+      <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+        <TextBlock Text="{Binding L[UpgradeDownloadInProgress]}" FontSize="14.667" TextWrapping="Wrap"/>
+        <ProgressBar Value="{Binding DownloadProgress}" Minimum="0" Maximum="100" Height="30" Margin="0,5"/>
+      </StackPanel>
+    </Grid>
+    <Button Grid.Row="2" Command="{Binding InstallUpdateCommand}" IsVisible="{Binding IsUpdateReady}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="10,5" Margin="0,5">
+      <Grid ColumnDefinitions="64,*">
+        <Image Source="/Assets/application.ico" Width="64" Height="64"/>
+        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+          <TextBlock Text="{Binding L[InstallButtonTitle]}" FontSize="14.667" TextWrapping="Wrap"/>
+          <TextBlock Text="{Binding L[InstallButtonDescription]}" FontSize="10.667" TextWrapping="Wrap" Margin="0,5,0,0"/>
+        </StackPanel>
+      </Grid>
+    </Button>
+  </Grid>
+</Window>

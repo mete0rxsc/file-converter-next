@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0</TargetFramework><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Data/Settings.default.xml" />
+    <EmbeddedResource Include="Data/Locales/*.json" />
+    <ProjectReference Include="../FileConverter.Shell.Protocol/FileConverter.Shell.Protocol.csproj" />
+  </ItemGroup>
+</Project>

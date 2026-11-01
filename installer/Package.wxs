@@ -1,0 +1,39 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="File Converter" Manufacturer="FileConverter contributors" Version="3.0.1"
+           UpgradeCode="{D07D1C1A-9D0D-4A34-A5BE-2616BDB34253}" Scope="perUser" Compressed="yes">
+    <MajorUpgrade DowngradeErrorMessage="已安装更新版本的 FileConverter。"/>
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high"/>
+    <Property Id="LEGACY_USER"><RegistrySearch Id="OldUser" Root="HKCU" Key="Software\Classes\CLSID\{AF9B72B5-F4E4-44B0-A3D9-B55B748EFE90}\InprocServer32" Type="raw" Bitness="always64"/></Property>
+    <Property Id="LEGACY_MACHINE"><RegistrySearch Id="OldMachine" Root="HKLM" Key="Software\Classes\CLSID\{AF9B72B5-F4E4-44B0-A3D9-B55B748EFE90}\InprocServer32" Type="raw" Bitness="always64"/></Property>
+    <Property Id="LEGACY_PATH_USER"><RegistrySearch Id="OldPathUser" Root="HKCU" Key="Software\FileConverter" Name="Path" Type="raw" Bitness="always64"/></Property>
+    <Property Id="LEGACY_PATH_MACHINE"><RegistrySearch Id="OldPathMachine" Root="HKLM" Key="Software\FileConverter" Name="Path" Type="raw" Bitness="always64"/></Property>
+    <Property Id="LEGACY_USER32"><RegistrySearch Id="OldUser32" Root="HKCU" Key="Software\Classes\CLSID\{AF9B72B5-F4E4-44B0-A3D9-B55B748EFE90}\InprocServer32" Type="raw" Bitness="always32"/></Property>
+    <Property Id="LEGACY_MACHINE32"><RegistrySearch Id="OldMachine32" Root="HKLM" Key="Software\Classes\CLSID\{AF9B72B5-F4E4-44B0-A3D9-B55B748EFE90}\InprocServer32" Type="raw" Bitness="always32"/></Property>
+    <Launch Condition="Installed OR NOT (LEGACY_USER OR LEGACY_MACHINE OR LEGACY_USER32 OR LEGACY_MACHINE32 OR LEGACY_PATH_USER OR LEGACY_PATH_MACHINE)" Message="请先卸载旧版 FileConverter 及 SharpShell 菜单扩展，再安装新版。"/>
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs"><Directory Id="INSTALLFOLDER" Name="FileConverter"/></Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder"><Directory Id="ShortcutFolder" Name="FileConverter">
+      <Component Id="StartMenu" Guid="*" Bitness="always64">
+        <Shortcut Id="AppShortcut" Name="FileConverter" Target="[INSTALLFOLDER]FileConverter.exe" WorkingDirectory="INSTALLFOLDER"/>
+        <RemoveFolder Id="RemoveShortcutFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU" Key="Software\FileConverter.Modern" Name="Installed" Type="integer" Value="1" KeyPath="yes"/>
+      </Component>
+    </Directory></StandardDirectory>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="ShellKeys" Guid="*" Bitness="always64">
+        <RegistryValue Root="HKCU" Key="Software\FileConverter.Modern" Name="ShellComponent" Value="1" Type="integer" KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+    <CustomAction Id="InitializeSettings" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]FileConverter.exe&quot; --post-install-init --integration-user-sid &quot;[UserSID]&quot; --integration-local-app-data &quot;[LocalAppDataFolder].&quot; --verbose" Execute="deferred" Impersonate="yes" Return="check"/>
+    <CustomAction Id="RemoveShell" Directory="INSTALLFOLDER" ExeCommand="&quot;[INSTALLFOLDER]FileConverter.exe&quot; --unregister-shell-extension --integration-user-sid &quot;[UserSID]&quot; --integration-local-app-data &quot;[LocalAppDataFolder].&quot; --verbose" Execute="deferred" Impersonate="yes" Return="check"/>
+    <InstallExecuteSequence>
+      <Custom Action="InitializeSettings" After="WriteRegistryValues" Condition="NOT REMOVE"/>
+      <Custom Action="RemoveShell" Before="RemoveFiles" Condition="REMOVE = &quot;ALL&quot;"/>
+    </InstallExecuteSequence>
+    <Feature Id="Complete" Title="FileConverter" Level="1">
+      <ComponentRef Id="StartMenu"/><ComponentRef Id="ShellKeys"/>
+      <ComponentGroupRef Id="Payload"/>
+    </Feature>
+  </Package>
+</Wix>

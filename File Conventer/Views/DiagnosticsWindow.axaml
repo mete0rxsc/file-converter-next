@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:File_Conventer.ViewModels" x:Class="File_Conventer.Views.DiagnosticsWindow"
+        x:DataType="vm:MainViewModel" Title="File Converter" Width="800" Height="600" Icon="/Assets/application.ico">
+  <Grid RowDefinitions="60,*">
+    <StackPanel Orientation="Horizontal" Spacing="12" Margin="6">
+      <Image Source="/Assets/LogIcon.png" Width="48" Height="48"/>
+      <TextBlock Text="{Binding L[Diagnostics]}" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+    </StackPanel>
+    <TabControl Grid.Row="1" Margin="5">
+      <TabItem Header="{Binding L[Application]}">
+        <TextBox Text="{Binding Diagnostics}" IsReadOnly="True" AcceptsReturn="True" FontFamily="Consolas" TextWrapping="NoWrap" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</Window>

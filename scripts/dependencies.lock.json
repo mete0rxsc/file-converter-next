@@ -1,0 +1,14 @@
+[
+  {
+    "Name": "ffmpeg-n8.1-latest-win64-gpl-8.1.zip",
+    "Version": "8.1",
+    "Url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-win64-gpl-8.1.zip",
+    "Sha256": "7c64e09a513687b5eca9e97a723ae3c96eadb5e3f8a64a0c2682f2ed72eaf644"
+  },
+  {
+    "Name": "gs10080w64.exe",
+    "Version": "10.08.0",
+    "Url": "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10080/gs10080w64.exe",
+    "Sha256": "52a91b8bf09298788d7a57b9206127026c23eacd75405f0a131e26dc381dce50"
+  }
+]

@@ -1,0 +1,14 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:File_Conventer.ViewModels" xmlns:controls="using:File_Conventer.Controls"
+        x:Class="File_Conventer.Views.HelpWindow" x:DataType="vm:MainViewModel" Title="File Converter"
+        Width="1000" Height="880" CanResize="False" WindowStartupLocation="CenterScreen" Icon="/Assets/application.ico">
+  <Grid Margin="5" RowDefinitions="Auto,*,Auto">
+    <StackPanel Spacing="4">
+      <TextBlock Text="{Binding L[FileConverterStartHelp1]}" TextWrapping="Wrap" FontWeight="Bold"/>
+      <TextBlock Text="{Binding L[FileConverterStartHelp2]}" TextWrapping="Wrap"/>
+      <TextBlock Text="{Binding L[FileConverterStartHelp3]}" TextWrapping="Wrap"/>
+    </StackPanel>
+    <controls:UsageAnimation Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Left" Margin="0,7"/>
+    <Button Grid.Row="2" Content="{Binding L[Ok]}" Click="CloseWindow" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+  </Grid>
+</Window>

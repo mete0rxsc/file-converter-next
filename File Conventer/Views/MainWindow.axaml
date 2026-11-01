@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:File_Conventer.ViewModels" x:Class="File_Conventer.Views.MainWindow"
+        x:DataType="vm:MainViewModel" Title="File Converter" Width="950" Height="500" MinWidth="640" MinHeight="480"
+        WindowStartupLocation="CenterScreen" Icon="/Assets/application.ico">
+  <Grid RowDefinitions="64,*" Margin="10">
+    <Grid ColumnDefinitions="*,64,64">
+      <Grid ColumnDefinitions="Auto,*">
+        <TextBlock Text="{Binding L[ConversionQueueTitle]}" VerticalAlignment="Center" FontSize="18" FontWeight="Bold"/>
+        <Button Grid.Column="1" Content="{Binding Status}" Command="{Binding CancelAutoExitCommand}"
+                Classes="status" HorizontalAlignment="Right" VerticalAlignment="Center" ToolTip.Tip="{Binding L[CancelAutoExit]}"/>
+      </Grid>
+      <Button Grid.Column="1" Margin="3" Click="ShowDiagnostics" ToolTip.Tip="{Binding L[DiagnosticsButtonTooltip]}" Classes="tile">
+        <Image Source="/Assets/LogIcon.png" Width="48" Height="48"/>
+      </Button>
+      <Button Grid.Column="2" Margin="3" Click="ShowSettings" ToolTip.Tip="{Binding L[SettingsButtonTooltip]}" Classes="tile">
+        <Image Source="/Assets/SettingsIcon.ico" Width="48" Height="48"/>
+      </Button>
+    </Grid>
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <ItemsControl ItemsSource="{Binding Jobs}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:JobViewModel">
+            <Border Background="{Binding StatusBackground}" CornerRadius="8" Margin="5" Padding="0,4">
+              <Grid ColumnDefinitions="*,64">
+                <Grid Margin="10" ColumnDefinitions="2.5*,*" RowDefinitions="20,Auto">
+                  <TextBlock Text="{Binding OutputPath}" FontWeight="Bold" Foreground="#DD000000" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding OutputPath}"/>
+                  <StackPanel Grid.Row="1" Margin="10,0,0,0">
+                    <TextBlock Text="{Binding Input}" FontStyle="Italic" FontSize="11" Foreground="#AA000000" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Input}"/>
+                    <TextBlock Text="{Binding Detail}" Foreground="{Binding StatusForeground}" TextWrapping="Wrap" FontSize="13"/>
+                  </StackPanel>
+                  <TextBlock Grid.Column="1" Text="{Binding StateText}" FontWeight="Bold" Foreground="{Binding StatusForeground}"/>
+                  <StackPanel Grid.Column="1" Grid.Row="1">
+                    <ProgressBar Height="18" Minimum="0" Maximum="100" Value="{Binding Progress}" Foreground="{Binding StatusForeground}"/>
+                    <TextBlock Text="{Binding RemainingTime}" Foreground="{Binding StatusForeground}" FontSize="12"/>
+                  </StackPanel>
+                </Grid>
+                <Button Grid.Column="1" Margin="3" Height="57" Command="{Binding CancelCommand}" IsVisible="{Binding CanCancel}" Classes="tile">
+                  <Image Source="/Assets/CancelIcon.png" Width="48" Height="48"/>
+                </Button>
+                <Image Grid.Column="1" Source="/Assets/SuccessIcon.png" Width="48" Height="48" IsVisible="{Binding IsDone}"/>
+                <Image Grid.Column="1" Source="/Assets/FailIcon.png" Width="48" Height="48" IsVisible="{Binding IsFailed}"/>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </Grid>
+</Window>
