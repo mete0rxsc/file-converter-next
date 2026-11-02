@@ -40,6 +40,6 @@ if(!$SkipInstaller){
     dotnet build 'installer\FileConverter.Installer.wixproj' -c Release "-p:PublishDir=$output" --nologo
     Check-Exit 'MSI build'
 }
-Compress-Archive -Path "$output\*" -DestinationPath 'artifacts\FileConverter-3.0.2-win-x64.zip' -Force
+Compress-Archive -Path "$output\*" -DestinationPath 'artifacts\FileConverter-3.0.3-win-x64.zip' -Force
 Write-Host "Published: $output"
 Write-Host 'Update source: %LOCALAPPDATA%\FileConverter\settings.json -> Updates.Repository'

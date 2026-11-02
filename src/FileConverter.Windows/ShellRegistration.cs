@@ -7,6 +7,9 @@ namespace FileConverter.Windows;
 
 public static class ShellRegistration
 {
+    // UI-only releases retain the validated shell payload and its installation path.
+    // Keep this in sync with scripts/Build.ps1 and scripts/Test-Shell.ps1.
+    private const string ShellPayloadVersion = "3.0.2";
     public const string AotClassId = "{61699489-9EEA-43D6-BF5B-32DB32B7A201}";
     public const string CppClassId = "{61699489-9EEA-43D6-BF5B-32DB32B7A202}";
     private static readonly string[] SupersededClassIds = ["{61699489-9EEA-43D6-BF5B-32DB32B7A101}", "{61699489-9EEA-43D6-BF5B-32DB32B7A102}"];
@@ -112,7 +115,7 @@ public static class ShellRegistration
         if (LegacyInstalled(userSid)) throw new InvalidOperationException("检测到旧版 FileConverter 或旧 SharpShell 菜单扩展。请先卸载旧版，再启用新版菜单。");
         var executable = Path.Combine(baseDirectory, "FileConverter.exe");
         if (!File.Exists(executable)) throw new FileNotFoundException("找不到主程序；请使用完整发行包。", executable);
-        var file = Path.Combine(baseDirectory, "shell", UpdateService.CurrentVersion.ToString(), settings.Shell.Mode == ShellMode.NativeAot ? "FileConverter.Shell.NativeAot.dll" : "FileConverter.Shell.NativeCpp.dll");
+        var file = Path.Combine(baseDirectory, "shell", ShellPayloadVersion, settings.Shell.Mode == ShellMode.NativeAot ? "FileConverter.Shell.NativeAot.dll" : "FileConverter.Shell.NativeCpp.dll");
         if (!File.Exists(file)) throw new FileNotFoundException("找不到所选 Shell DLL；请使用完整发行包。", file);
         using var root = OpenUserRoot(userSid);
         return file;

@@ -55,6 +55,11 @@ public sealed class WindowTests
             var executable = Path.Combine(root, "FileConverter.exe"); File.WriteAllBytes(executable, []);
             Assert.Throws<FileNotFoundException>(() => ShellRegistration.Register(SettingsStore.LoadDefaults(), root, executable, "Settings", root));
             Assert.Equal(original, File.ReadAllBytes(menu));
+            // A UI release must still resolve the unchanged, versioned shell payload.
+            var shell = Path.Combine(root, "shell", "3.0.2", "FileConverter.Shell.NativeAot.dll");
+            Directory.CreateDirectory(Path.GetDirectoryName(shell)!); File.WriteAllBytes(shell, []);
+            Assert.Equal(shell, ShellRegistration.ValidateRegistration(SettingsStore.LoadDefaults(), root));
+            Assert.Equal(original, File.ReadAllBytes(menu));
         }
         finally { Directory.Delete(root, true); }
     }
@@ -88,7 +93,15 @@ public sealed class WindowTests
             var upgrade = WindowNavigation.Show<UpgradeWindow>(progress);
             Capture(upgrade, "upgrade"); upgrade.Close();
             var help = WindowNavigation.Show<HelpWindow>(progress);
-            Capture(help, "help"); help.Close();
+            Capture(help, "help");
+            var helpScroll = help.GetVisualDescendants().OfType<ScrollViewer>().First();
+            helpScroll.Offset = new Vector(0, helpScroll.Extent.Height);
+            Capture(help, "help-usage");
+            help.Width = 640; help.Height = 520; helpScroll.Offset = default;
+            Capture(help, "help-small"); help.Close();
+            vm.L.Use("en");
+            var englishHelp = new HelpWindow { DataContext = vm }; englishHelp.Show();
+            Capture(englishHelp, "help-en"); englishHelp.Close();
         }
         finally { progress.Close(); Directory.Delete(root, true); }
     }
@@ -173,7 +186,7 @@ public sealed class WindowTests
             var digest = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
             HttpContent content = request.RequestUri!.Host == "api.github.com" ? new StringContent(JsonSerializer.Serialize(new
             {
-                tag_name = "v3.0.3", body = "更新说明", assets = new[] { new { name = "FileConverter-win-x64.msi", browser_download_url = "https://example.invalid/update.msi", digest = "sha256:" + digest, size = bytes.Length } }
+                tag_name = "v" + new Version(UpdateService.CurrentVersion.Major, UpdateService.CurrentVersion.Minor, UpdateService.CurrentVersion.Build + 1), body = "更新说明", assets = new[] { new { name = "FileConverter-win-x64.msi", browser_download_url = "https://example.invalid/update.msi", digest = "sha256:" + digest, size = bytes.Length } }
             })) : new ByteArrayContent(bytes);
             return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = content });
         }

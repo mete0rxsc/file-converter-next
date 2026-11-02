@@ -1,5 +1,5 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="File Converter" Manufacturer="FileConverter contributors" Version="3.0.2"
+  <Package Name="File Converter" Manufacturer="FileConverter contributors" Version="3.0.3"
            UpgradeCode="{D07D1C1A-9D0D-4A34-A5BE-2616BDB34253}" Scope="perUser" Compressed="yes">
     <MajorUpgrade Schedule="afterInstallInitialize" DowngradeErrorMessage="已安装更新版本的 FileConverter。"/>
     <!-- Match upstream Installer/Product.wxs: never ask Restart Manager to close Explorer. -->

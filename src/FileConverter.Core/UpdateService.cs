@@ -10,7 +10,7 @@ public sealed record ReleaseInfo(string Tag, string Notes, Uri AssetUrl, string 
 
 public sealed partial class UpdateService : IDisposable
 {
-    public static Version CurrentVersion { get; } = new(3, 0, 2);
+    public static Version CurrentVersion { get; } = new(3, 0, 3);
     private readonly HttpClient client;
     public UpdateService(HttpMessageHandler? handler = null)
     {

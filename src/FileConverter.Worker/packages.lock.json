@@ -19,11 +19,22 @@
       "fileconverter.core": {
         "type": "Project",
         "dependencies": {
-          "FileConverter.Shell.Protocol": "[3.0.2, )"
+          "FileConverter.Shell.Protocol": "[3.0.3, )"
         }
       },
       "fileconverter.shell.protocol": {
         "type": "Project"
+      }
+    },
+    "net10.0-windows7.0/win-x64": {
+      "Magick.NET-Q16-AnyCPU": {
+        "type": "Direct",
+        "requested": "[15.0.0, )",
+        "resolved": "15.0.0",
+        "contentHash": "zcwOVCGvx4y+7xV+1Vlp1SMhfL5vc22xf7ahBMZ38xot/1Cmzi6lMZeZLlbjkD73PedRjStDu9v1qX8S0XmKjA==",
+        "dependencies": {
+          "Magick.NET.Core": "15.0.0"
+        }
       }
     }
   }

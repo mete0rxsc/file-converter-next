@@ -75,6 +75,6 @@ dotnet test '.\tests\FileConverter.UiTests\FileConverter.UiTests.csproj' -c Rele
 
 需要验证旧测试版 AOT 已驻留时的兼容性，可运行 `.\scripts\Test-Shell.ps1 -PreviousAot '旧DLL的完整路径'`。加载只发生在隔离的原生测试宿主内，使用临时菜单快照，不修改用户菜单注册。
 
-artifacts\publish\FileConverter.exe 为完整免安装目录的入口，artifacts\FileConverter-3.0.2-win-x64.zip 为压缩包，installer\bin\x64\Release\*.msi 为安装包。
+artifacts\publish\FileConverter.exe 为完整免安装目录的入口，artifacts\FileConverter-3.0.3-win-x64.zip 为压缩包，installer\bin\x64\Release\*.msi 为安装包。介绍页的 V2.0 表示 Mete0r 的重构版本署名；安装包内部版本号为 3.0.3，以便从已安装的 3.0.2 正常升级。Shell 接口未变，沿用 shell\3.0.2 目录。
 
 依赖版本及 SHA-256 锁定在 scripts\dependencies.lock.json。FFmpeg 发布者的 latest 资产可能变更；脚本会拒绝与锁定哈希不符的文件，须经审查后更新锁文件，不自动信任新文件。

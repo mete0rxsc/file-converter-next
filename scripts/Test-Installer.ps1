@@ -1,4 +1,4 @@
-param([string]$Msi=(Join-Path $PSScriptRoot '..\installer\bin\x64\Release\FileConverter-3.0.2-win-x64.msi'))
+param([string]$Msi=(Join-Path $PSScriptRoot '..\installer\bin\x64\Release\FileConverter-3.0.3-win-x64.msi'))
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $msiFile=(Resolve-Path -LiteralPath $Msi).Path

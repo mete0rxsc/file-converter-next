@@ -1,14 +1,79 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:File_Conventer.ViewModels" xmlns:controls="using:File_Conventer.Controls"
         x:Class="File_Conventer.Views.HelpWindow" x:DataType="vm:MainViewModel" Title="File Converter"
-        Width="1000" Height="880" CanResize="False" WindowStartupLocation="CenterScreen" Icon="/Assets/application.ico">
-  <Grid Margin="5" RowDefinitions="Auto,*,Auto">
-    <StackPanel Spacing="4">
-      <TextBlock Text="{Binding L[FileConverterStartHelp1]}" TextWrapping="Wrap" FontWeight="Bold"/>
-      <TextBlock Text="{Binding L[FileConverterStartHelp2]}" TextWrapping="Wrap"/>
-      <TextBlock Text="{Binding L[FileConverterStartHelp3]}" TextWrapping="Wrap"/>
-    </StackPanel>
-    <controls:UsageAnimation Grid.Row="1" Stretch="Uniform" HorizontalAlignment="Left" Margin="0,7"/>
-    <Button Grid.Row="2" Content="{Binding L[Ok]}" Click="CloseWindow" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+        Width="880" Height="800" MinWidth="640" MinHeight="520"
+        WindowStartupLocation="CenterScreen" Icon="/Assets/application.ico" Background="#F5F7FA">
+  <Window.Styles>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="White"/>
+      <Setter Property="BorderBrush" Value="#E1E6EF"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="20"/>
+    </Style>
+    <Style Selector="TextBlock.secondary"><Setter Property="Foreground" Value="#526176"/></Style>
+    <Style Selector="TextBlock.section"><Setter Property="FontSize" Value="16"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style Selector="Button.repository">
+      <Setter Property="Padding" Value="0,6"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+  </Window.Styles>
+  <Grid RowDefinitions="*,Auto">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="28,24,28,20" Spacing="16">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="6">
+            <TextBlock Text="File Converter" FontSize="30" FontWeight="SemiBold" Foreground="#172B4D"/>
+            <TextBlock Text="{Binding WelcomeSubtitle}" Classes="secondary" TextWrapping="Wrap"/>
+          </StackPanel>
+          <Border Grid.Column="1" Background="#E5EDFF" CornerRadius="6" Padding="12,6" VerticalAlignment="Top" Margin="12,6,0,0">
+            <TextBlock Text="V2.0" FontWeight="SemiBold" Foreground="#2859B8"/>
+          </Border>
+        </Grid>
+
+        <Border Classes="card">
+          <StackPanel Spacing="5">
+            <TextBlock Text="{Binding WelcomeAttribution}" FontWeight="SemiBold" FontSize="16"/>
+            <TextBlock Text="{Binding WelcomeUpstream}" Classes="secondary" TextWrapping="Wrap"/>
+            <Button Classes="link repository" Command="{Binding OpenProjectCommand}"
+                    ToolTip.Tip="{Binding WelcomeRepositoryHint}" AutomationProperties.Name="{Binding WelcomeRepositoryHint}">
+              <TextBlock Text="https://github.com/Tichau/FileConverter" TextWrapping="Wrap"/>
+            </Button>
+            <TextBlock Text="{Binding WelcomeLicense}" Classes="secondary" FontSize="12" TextWrapping="Wrap"/>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="9">
+            <TextBlock Text="{Binding WelcomeFixesTitle}" Classes="section"/>
+            <TextBlock Text="{Binding WelcomeFormatFix}" TextWrapping="Wrap" Classes="secondary"/>
+            <TextBlock Text="{Binding WelcomeShellFix}" TextWrapping="Wrap" Classes="secondary"/>
+            <TextBlock Text="{Binding WelcomeInstallerFix}" TextWrapping="Wrap" Classes="secondary"/>
+          </StackPanel>
+        </Border>
+
+        <Border Classes="card">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{Binding WelcomeUsageTitle}" Classes="section"/>
+            <TextBlock Text="{Binding L[FileConverterStartHelp1]}" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding L[FileConverterStartHelp2]}" Classes="secondary" TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding L[FileConverterStartHelp3]}" Classes="secondary" TextWrapping="Wrap"/>
+            <Border CornerRadius="6" ClipToBounds="True" Background="#F5F7FA" Margin="0,4,0,0">
+              <controls:UsageAnimation Stretch="Uniform" MaxHeight="300" HorizontalAlignment="Center"/>
+            </Border>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+    <Border Grid.Row="1" Background="White" BorderBrush="#E1E6EF" BorderThickness="0,1,0,0" Padding="28,14">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding VersionLabel}" Classes="secondary" FontSize="12" VerticalAlignment="Center"/>
+        <Button Grid.Column="1" Content="{Binding WelcomeCloseLabel}" Click="CloseWindow" IsDefault="True" IsCancel="True"
+                MinWidth="108" Padding="20,9" CornerRadius="6" Background="#2859B8" Foreground="White" BorderBrush="#2859B8"/>
+      </Grid>
+    </Border>
   </Grid>
 </Window>
