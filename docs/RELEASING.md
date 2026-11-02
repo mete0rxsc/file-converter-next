@@ -1,6 +1,6 @@
 # File Converter Next 发布说明
 
-项目仓库：[mete0rxsc/file-converter-next](https://github.com/mete0rxsc/file-converter-next)。本文记录生成发布资产与手动发布 GitHub Release 的步骤；构建脚本不会推送提交、创建远端 Release 或上传文件。
+项目仓库：[mete0rxsc/file-converter-next](https://github.com/mete0rxsc/file-converter-next)。GitHub Actions 在推送与源码版本一致的 `v*` 标签时构建并发布 MSI、ZIP 和 SHA-256 清单。核心与 UI 测试失败会阻止发布；Office 集成测试单独记录实际结果。当前流程固定发布为 prerelease，不设为 latest，因为实体设备、打印机环境及安装交互验收尚未完成。
 
 ## 版本与文件
 
@@ -59,14 +59,16 @@ $checksumLines = foreach ($assetName in $assetNames) {
 [IO.File]::WriteAllLines((Join-Path $releaseDirectory 'SHA256SUMS.txt'), $checksumLines, [Text.UTF8Encoding]::new($false))
 ```
 
-## 发布到 GitHub Release
+## 自动发布到 GitHub Release
 
-1. 将完成审查的源码提交到本项目仓库；保存准确对应此次二进制的提交及依赖锁文件。
-2. 在该提交创建 `v3.0.5` tag，进入仓库 Releases 创建对应版本。
-3. 从 [CHANGELOG.md](../CHANGELOG.md) 整理发布说明，列出本次命名迁移、修复摘要、环境要求和未完成验收。
-4. 上传最终 MSI、ZIP、`SHA256SUMS.txt`，并满足下述对应源码分发要求。资产名保留 `x64`。
-5. 核对下载后的文件哈希，再通过 GitHub API 确认 MSI 资产的 `digest` 为最终文件的 `sha256:…`。应用更新器校验该 digest，不能只上传单独的校验清单而缺少 API digest。
-6. 在独立测试环境验收检查更新、更新说明、下载、取消、哈希验证和退出后安装，再将该发布标记为已完成更新验收。
+1. 将完成审查的源码提交并推送到本项目仓库。
+2. 在对应提交创建并推送数值版本标签，例如 `v3.0.5`；这会启动 `.github/workflows/release.yml`。
+3. Actions 在 Windows runner 上构建 MSI/ZIP、运行核心和 UI 测试，并执行 Office 格式集成测试。
+4. 核心或 UI 测试失败时不会创建 Release。Office 测试结果会写入发布说明；当前只创建 prerelease，即使其自动测试通过，也不代表打印机及真实安装环境验收完成。NVIDIA 实体硬件测试在托管 runner 中排除。
+5. 下载工作流发布的 MSI、ZIP 和 `SHA256SUMS.txt` 并核对哈希。MSI 的 GitHub API `digest` 也必须是最终文件的 `sha256:…`，因为应用更新器会校验该字段。
+6. 独立验收更新说明、下载、取消、哈希验证和退出后安装，再根据证据更新验收文档。
+
+手动运行 Actions 时也必须在 Run workflow 的分支/标签选择器中选择对应版本标签。上传先写入草稿，核对所有资产的 GitHub API SHA-256 digest 后再公开；上传失败可重跑来恢复草稿。已公开版本不会被覆盖，应使用新的源码版本与标签发布后续修正。
 
 应用检查 `repos/mete0rxsc/file-converter-next/releases/latest`；tag 应为可解析的数值版本（如 `v3.0.5`）。预发布版本不会按普通 latest Release 分发，新版本必须大于 `UpdateService.CurrentVersion`，否则不会提示更新。
 

@@ -1,0 +1,111 @@
+name: Build and publish release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-2025
+    timeout-minutes: 120
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Validate release tag and tools
+        shell: pwsh
+        run: |
+          [xml]$props = Get-Content Directory.Build.props
+          $version = [string]$props.Project.PropertyGroup.Version
+          if ($env:GITHUB_REF_TYPE -ne 'tag' -or $env:GITHUB_REF_NAME -ne "v$version") {
+            throw "Run this workflow on the v$version tag. Release tag must match the source version."
+          }
+          if (!(Test-Path 'C:/Program Files/7-Zip/7z.exe')) { throw '7-Zip is missing from the Windows runner.' }
+
+      - name: Build MSI and ZIP
+        shell: pwsh
+        run: ./scripts/Build.ps1
+
+      - name: Run core and UI tests
+        shell: pwsh
+        run: |
+          dotnet test 'tests/FileConverterNext.Tests/FileConverterNext.Tests.csproj' -c Release --filter 'FullyQualifiedName!~OfficeTests&FullyQualifiedName!~NvidiaHardwareEncodingAndSoftwareFallbackProduceValidVideo' --logger 'trx;LogFileName=core-media.trx' --results-directory artifacts/test-results
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet test 'tests/FileConverterNext.UiTests/FileConverterNext.UiTests.csproj' -c Release --logger 'trx;LogFileName=ui.trx' --results-directory artifacts/test-results
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Run Office conversion acceptance
+        id: office
+        continue-on-error: true
+        timeout-minutes: 10
+        shell: pwsh
+        run: dotnet test 'tests/FileConverterNext.Tests/FileConverterNext.Tests.csproj' -c Release --filter 'FullyQualifiedName~OfficeTests' --logger 'trx;LogFileName=office.trx' --results-directory artifacts/test-results
+
+      - name: Save test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-results
+          path: artifacts/test-results
+          if-no-files-found: ignore
+
+      - name: Prepare release notes
+        shell: pwsh
+        env:
+          OFFICE_TEST_RESULT: ${{ steps.office.outcome }}
+        run: |
+          $notes = Get-Content CHANGELOG.md -Raw
+          if ($env:OFFICE_TEST_RESULT -eq 'success') {
+            $status = 'Passed in the GitHub Actions Windows runner.'
+          } else {
+            $status = 'Not passed. Office conversion remains unverified.'
+          }
+          $limits = 'Prerelease: clean-account MSI installation, printer-free/unreachable-printer environments, physical audio CD and Kitopia acceptance are incomplete. The NVIDIA hardware test is excluded on hosted runners. This build is unsigned and is not advertised as fully validated.'
+          Set-Content -LiteralPath 'artifacts/release/RELEASE-NOTES.md' -Value ($limits + "`r`n`r`nSource: " + $env:GITHUB_SHA + "`r`n`r`n" + $notes + "`r`n## Automated Office acceptance`r`n`r`n" + $status) -Encoding utf8
+
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = @('artifacts/release/FileConverterNext-3.0.5-win-x64.msi', 'artifacts/release/FileConverterNext-3.0.5-win-x64.zip', 'artifacts/release/SHA256SUMS.txt')
+          foreach ($asset in $assets) { if (!(Test-Path -LiteralPath $asset)) { throw "Missing release asset: $asset" } }
+          foreach ($line in Get-Content artifacts/release/SHA256SUMS.txt) {
+            if ($line -notmatch '^([0-9a-f]{64})  (.+)$') { throw 'Invalid checksum manifest.' }
+            $path = Join-Path artifacts/release $Matches[2]
+            if ((Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -ne $Matches[1]) { throw "Checksum mismatch: $path" }
+          }
+          $existing = gh release view $env:GITHUB_REF_NAME --repo $env:GITHUB_REPOSITORY --json isDraft 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            if (!(($existing | ConvertFrom-Json).isDraft)) { throw 'This tag already has a published release. Use a new version tag; published assets are not overwritten.' }
+          } else {
+            gh release create $env:GITHUB_REF_NAME --repo $env:GITHUB_REPOSITORY --verify-tag --title "File Converter Next $env:GITHUB_REF_NAME" --notes-file artifacts/release/RELEASE-NOTES.md --draft --prerelease --latest=false
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          gh release upload $env:GITHUB_REF_NAME @assets --repo $env:GITHUB_REPOSITORY --clobber
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $releaseJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:GITHUB_REF_NAME"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $release = $releaseJson | ConvertFrom-Json
+          foreach ($path in $assets) {
+            $name = [IO.Path]::GetFileName($path)
+            $asset = @($release.assets | Where-Object name -eq $name)
+            $digest = 'sha256:' + (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($asset.Count -ne 1 -or $asset[0].digest -ne $digest) { throw "Uploaded asset digest mismatch: $name" }
+          }
+          gh release edit $env:GITHUB_REF_NAME --repo $env:GITHUB_REPOSITORY --draft=false --prerelease --latest=false --notes-file artifacts/release/RELEASE-NOTES.md
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

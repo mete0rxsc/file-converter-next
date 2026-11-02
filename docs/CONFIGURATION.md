@@ -49,7 +49,7 @@ Mode 可为 NativeAot 或 NativeCpp。这是故障库替换的内部实现选项
 
 ## 工具与转换
 
-完整发行包附带 FFmpeg、FFprobe 和 Ghostscript。内部工具路径可通过配置文件 Tools.FFmpeg、Tools.FFprobe、Tools.Ghostscript 指定绝对路径。Office 格式仍需要 Microsoft Office；CD 抓轨需要可读音频 CD 与实体光驱。硬件编码失败会回退软件编码。
+完整发行包附带 FFmpeg、FFprobe、Ghostscript 和 LibreOffice。Office / ODF 格式通过 LibreOffice 转为 PDF；当前导出集成测试未通过，具体状态见 [验收矩阵](ACCEPTANCE.md)。CD 抓轨需要可读音频 CD 与实体光驱。硬件编码失败会回退软件编码。
 
 输出在任务专属目录转换并验证后提交；已有文件通过数字后缀避让，不覆盖输入。多页文件逐页输出。仅全部结果成功写入后执行该预设选择的源文件归档或删除；默认保留源文件。归档目录必须是输入目录内的子目录。
 
