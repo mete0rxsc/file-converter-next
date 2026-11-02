@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net10.0-windows7.0": {
+      "fileconverternext.core": {
+        "type": "Project",
+        "dependencies": {
+          "FileConverterNext.Shell.Protocol": "[3.0.5, )"
+        }
+      },
+      "fileconverternext.shell.protocol": {
+        "type": "Project"
+      }
+    },
+    "net10.0-windows7.0/win-x64": {}
+  }
+}

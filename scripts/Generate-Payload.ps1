@@ -9,10 +9,10 @@ $references=[Collections.Generic.List[string]]::new()
 $xml.Add('<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"><Fragment><DirectoryRef Id="INSTALLFOLDER">')
 function EmitDirectory([string]$path,[string]$relative,[string]$directoryId){
     $componentId=Id 'Payload_' $relative
-    $guidBytes=$hash.ComputeHash([Text.Encoding]::UTF8.GetBytes('FileConverter.Modern.Payload/'+$relative.ToLowerInvariant()))[0..15]
+    $guidBytes=$hash.ComputeHash([Text.Encoding]::UTF8.GetBytes('FileConverterNext.Modern.Payload/'+$relative.ToLowerInvariant()))[0..15]
     $componentGuid=New-Object Guid (,[byte[]]$guidBytes)
     $xml.Add('<Component Id="'+$componentId+'" Guid="'+$componentGuid.ToString('B')+'" Bitness="always64">')
-    $xml.Add('<RegistryValue Root="HKCU" Key="Software\FileConverter.Modern\Payload" Name="'+$componentId+'" Type="integer" Value="1" KeyPath="yes"/>')
+    $xml.Add('<RegistryValue Root="HKCU" Key="Software\FileConverterNext.Modern\Payload" Name="'+$componentId+'" Type="integer" Value="1" KeyPath="yes"/>')
     foreach($file in Get-ChildItem -LiteralPath $path -File | Where-Object {$_.Extension -notin @('.pdb','.lib','.exp')}){
         $fileRelative=if($relative){Join-Path $relative $file.Name}else{$file.Name}
         $fileId=Id 'File_' $fileRelative

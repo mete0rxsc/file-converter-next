@@ -1,9 +1,61 @@
-bin/
-obj/
+# .NET / NativeAOT / C++ build output
+**/bin/
+**/obj/
+/artifacts/
+/release/
+/releases/
+/dist/
+/build/
 /packages/
-riderModule.iml
-/_ReSharper.Caches/
-.idea/
-artifacts/
-TestResults/
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.obj
+*.wixpdb
+
+# IDE state and local caches
 .vs/
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.iml
+**/_ReSharper.Caches/
+**/_ReSharper.*/
+*.DotSettings.user
+
+# Test, coverage and diagnostic output
+**/TestResults/
+**/coverage/
+*.trx
+*.coverage
+*.coveragexml
+*.dmp
+*.log
+
+# Local configuration, migration backups and temporary downloads
+/settings.json
+/LibreOffice_26.8.2_Win_x86-64/
+**/Settings.user.xml
+*.bak
+*.tmp
+*.temp
+*.partial
+*.download
+*.zip
+*.msi
+
+# Signing material and local secrets
+*.pfx
+*.p12
+*.snk
+.env
+.env.*
+!.env.example
+
+# Keep reproducible dependency manifests in source control.
+!**/packages.lock.json
+!/scripts/dependencies.lock.json

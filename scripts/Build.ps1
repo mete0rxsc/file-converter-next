@@ -13,33 +13,43 @@ $vcvars=Join-Path $vsRoot 'VC\Auxiliary\Build\vcvars64.bat'
 $environmentLines=& $env:ComSpec /d /s /c ('"'+$vcvars+'" >nul && set')
 Check-Exit 'VC environment'
 foreach($line in $environmentLines){if($line -match '^([^=]+)=(.*)$'){[Environment]::SetEnvironmentVariable($matches[1],$matches[2],'Process')}}
-$output=Join-Path $repoRoot 'artifacts\publish'
-$shellOutput=Join-Path $output 'shell\3.0.2'
-# Publish only this build's shell payload; installed DLLs are never touched here.
-$shellRoot=[IO.Path]::GetFullPath((Join-Path $output 'shell'))
-if(!$shellRoot.StartsWith([IO.Path]::GetFullPath($repoRoot)+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Shell output is outside the repository.'}
-if(Test-Path -LiteralPath $shellRoot){Remove-Item -LiteralPath $shellRoot -Recurse -Force}
+$output=Join-Path $repoRoot 'artifacts\publish-next'
+$shellOutput=Join-Path $output 'shell\3.0.5'
+# Build into a fresh payload so renamed assemblies and old files cannot ship together.
+$publishRoot=[IO.Path]::GetFullPath($output)
+if($publishRoot -ne [IO.Path]::GetFullPath((Join-Path $repoRoot 'artifacts\publish-next')) -or !$publishRoot.StartsWith([IO.Path]::GetFullPath($repoRoot)+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)){throw 'Publish output is outside the intended workspace directory.'}
+if(Test-Path -LiteralPath $publishRoot){Remove-Item -LiteralPath $publishRoot -Recurse -Force}
 New-Item -ItemType Directory -Path $output,"$output\worker",$shellOutput,'artifacts\native' -Force | Out-Null
-dotnet build 'File Conventer.sln' -c Release --nologo
+dotnet build 'File Converter Next.sln' -c Release --nologo
 Check-Exit 'solution build'
-dotnet publish 'File Conventer\File Conventer.csproj' -c Release -r win-x64 --self-contained true -o $output --nologo
+dotnet publish 'File Converter Next\File Converter Next.csproj' -c Release -r win-x64 --self-contained true -o $output --nologo
 Check-Exit 'desktop publish'
-dotnet publish 'src\FileConverter.Worker\FileConverter.Worker.csproj' -c Release -r win-x64 --self-contained true -o "$output\worker" --nologo
+dotnet publish 'src\FileConverterNext.Worker\FileConverterNext.Worker.csproj' -c Release -r win-x64 --self-contained true -o "$output\worker" --nologo
 Check-Exit 'worker publish'
-dotnet publish 'src\FileConverter.Shell.NativeAot\FileConverter.Shell.NativeAot.csproj' -c Release -r win-x64 -o $shellOutput --nologo
+dotnet publish 'src\FileConverterNext.Shell.NativeAot\FileConverterNext.Shell.NativeAot.csproj' -c Release -r win-x64 -o $shellOutput --nologo
 Check-Exit 'AOT publish'
-cl.exe /nologo /std:c++20 /EHsc /W4 /O2 /MT /LD 'src\FileConverter.Shell.NativeCpp\Shell.cpp' /Fo'artifacts\native\Shell.obj' /link /DEF:'src\FileConverter.Shell.NativeCpp\Shell.def' /OUT:"$shellOutput\FileConverter.Shell.NativeCpp.dll" /IMPLIB:'artifacts\native\Shell.lib' ole32.lib shell32.lib user32.lib gdi32.lib advapi32.lib uuid.lib
+cl.exe /nologo /std:c++20 /EHsc /W4 /O2 /MT /LD 'src\FileConverterNext.Shell.NativeCpp\Shell.cpp' /Fo'artifacts\native\Shell.obj' /link /DEF:'src\FileConverterNext.Shell.NativeCpp\Shell.def' /OUT:"$shellOutput\FileConverterNext.Shell.NativeCpp.dll" /IMPLIB:'artifacts\native\Shell.lib' ole32.lib shell32.lib user32.lib gdi32.lib advapi32.lib uuid.lib
 Check-Exit 'C++ shell'
 cl.exe /nologo /std:c++20 /EHsc /W4 /O2 /MT 'tests\ShellHost\ShellHost.cpp' /Fo'artifacts\native\ShellHost.obj' /link /OUT:'artifacts\native\ShellHost.exe' ole32.lib shell32.lib user32.lib uuid.lib
 Check-Exit 'native test host'
 & "$PSScriptRoot\Test-Shell.ps1" -PreviousAot $PreviousAot
 & "$PSScriptRoot\Fetch-Dependencies.ps1" -Destination "$output\tools"
-Copy-Item -LiteralPath 'LICENSE.md','docs\THIRD-PARTY-NOTICES.md','docs\CONFIGURATION.md','docs\ACCEPTANCE.md' -Destination $output
-Copy-Item -LiteralPath 'File Conventer\Assets\preset.bmp','File Conventer\Assets\folder.bmp' -Destination $shellOutput
+Copy-Item -LiteralPath 'README.md','CHANGELOG.md','LICENSE.md','docs\THIRD-PARTY-NOTICES.md','docs\CONFIGURATION.md','docs\ACCEPTANCE.md','docs\RELEASING.md' -Destination $output
+Copy-Item -LiteralPath 'installer\License.rtf' -Destination $output
+Copy-Item -LiteralPath 'File Converter Next\Assets\preset.bmp','File Converter Next\Assets\folder.bmp' -Destination $shellOutput
 if(!$SkipInstaller){
-    dotnet build 'installer\FileConverter.Installer.wixproj' -c Release "-p:PublishDir=$output" --nologo
+    dotnet build 'installer\FileConverterNext.Installer.wixproj' -c Release "-p:PublishDir=$output" --nologo
     Check-Exit 'MSI build'
 }
-Compress-Archive -Path "$output\*" -DestinationPath 'artifacts\FileConverter-3.0.3-win-x64.zip' -Force
+$releaseDirectory=Join-Path $repoRoot 'artifacts\release'
+New-Item -ItemType Directory -Path $releaseDirectory -Force | Out-Null
+Compress-Archive -Path "$output\*" -DestinationPath (Join-Path $releaseDirectory 'FileConverterNext-3.0.5-win-x64.zip') -Force
+if(!$SkipInstaller){Copy-Item -LiteralPath 'installer\bin\x64\Release\FileConverterNext-3.0.5-win-x64.msi' -Destination $releaseDirectory -Force}
+$releaseAssets=@((Join-Path $releaseDirectory 'FileConverterNext-3.0.5-win-x64.zip'))
+if(!$SkipInstaller){$releaseAssets+=(Join-Path $releaseDirectory 'FileConverterNext-3.0.5-win-x64.msi')}
+$checksums=foreach($asset in $releaseAssets){((Get-FileHash -LiteralPath $asset -Algorithm SHA256).Hash.ToLowerInvariant())+'  '+[IO.Path]::GetFileName($asset)}
+[IO.File]::WriteAllLines((Join-Path $releaseDirectory 'SHA256SUMS.txt'),$checksums,[Text.UTF8Encoding]::new($false))
+Copy-Item -LiteralPath 'CHANGELOG.md','docs\RELEASING.md' -Destination $releaseDirectory -Force
 Write-Host "Published: $output"
-Write-Host 'Update source: %LOCALAPPDATA%\FileConverter\settings.json -> Updates.Repository'
+Write-Host "Release assets: $releaseDirectory"
+Write-Host 'Update source: %LOCALAPPDATA%\FileConverterNext\settings.json -> Updates.Repository'

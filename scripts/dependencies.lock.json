@@ -10,5 +10,17 @@
     "Version": "10.08.0",
     "Url": "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10080/gs10080w64.exe",
     "Sha256": "52a91b8bf09298788d7a57b9206127026c23eacd75405f0a131e26dc381dce50"
+  },
+  {
+    "Name": "LibreOffice_26.8.2_Win_x86-64.msi",
+    "Version": "26.8.2",
+    "Url": "https://download.documentfoundation.org/libreoffice/stable/26.8.2/win/x86_64/LibreOffice_26.8.2_Win_x86-64.msi",
+    "Sha256": "ff4b911403b67ee9e6249f820f9782c44bb32c94fdaa45b0da53a8e419e5307a"
+  },
+  {
+    "Name": "lessmsi-v2.12.9.zip",
+    "Version": "2.12.9",
+    "Url": "https://github.com/activescott/lessmsi/releases/download/v2.12.9/lessmsi-v2.12.9.zip",
+    "Sha256": "5b4e187e74b184ad3a63ccf06c3d17dae2b8c4b6c298a996dbd51a9f6db29d21"
   }
 ]

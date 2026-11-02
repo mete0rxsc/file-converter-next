@@ -1,0 +1,17 @@
+<Project Sdk="WixToolset.Sdk/6.0.2">
+  <PropertyGroup>
+    <OutputType>Package</OutputType><Platform>x64</Platform><OutputName>FileConverterNext-3.0.5-win-x64</OutputName>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish-next</PublishDir>
+    <DefineConstants>PublishDir=$(PublishDir)</DefineConstants>
+    <!-- Package is intentionally per-user only; ICE91's per-machine scenario cannot apply. -->
+    <SuppressIces>ICE91</SuppressIces>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.UI.wixext" Version="6.0.2" />
+    <Compile Include="obj/Payload.wxs"/>
+  </ItemGroup>
+  <Target Name="GeneratePayload" BeforeTargets="BeforeBuild">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)..\scripts\Generate-Payload.ps1&quot; -PublishDir &quot;$(PublishDir)&quot; -Output &quot;$(MSBuildThisFileDirectory)obj\Payload.wxs&quot;"/>
+  </Target>
+</Project>

@@ -28,8 +28,8 @@
 | 视频质量、速度、缩放、旋转、帧率、自定义 FFmpeg | FfmpegArguments，原版参数语义 | 默认预设代表样本通过；全部边界参数的独立元数据断言仍待补全 |
 | PDF、图片及多页输出 | Magick.NET 图片；独立 Ghostscript 渲染/验证 PDF | 两页 PDF 全页输出及全部图片目标格式通过 |
 | DVD / VOB | 新版 FFmpeg | 合成 VOB 转换通过；加密/受损 DVD 不属于该样本的验证结论 |
-| Office | 独立 STA 工作进程、Windows COM，替换 NetOffice | 本机 Word/docx、Excel/xlsx、PowerPoint/pptx 分别转 PDF 与 PNG 通过；旧 doc/xls/ppt 和 ODF 各格式、多文档并发未全部实测 |
-| Office 实例清理 | 根据 COM 实例窗口识别进程；仅结束确认属于任务的新实例 | 常规转换通过；COM 启动或无窗口阶段卡住时的实例清理仍需故障注入验收。默认系统打印机未改动 |
+| Office/ODF 文档 | 独立 LibreOffice headless 控制台进程 `soffice.com` 将 DOC/DOCX/XLS/XLSX/PPT/PPTX/ODT/ODS/ODP 导出 PDF，再沿用 PDF 页面输出 | LibreOffice 输入/导出集成测试本机失败：无界面 DOC 导出超过 15 秒仍未退出；切换控制台启动器、设置工作目录及校正用户配置 URI 后结果不变。未证明是打印机等待根因。真实无打印机与不可达网络打印机环境未验收；本版不得宣称此问题已修复 |
+| 文档转换进程清理 | 每个任务独立 LibreOffice profile / 工作目录；取消结束进程树，5 分钟硬超时 | 取消、超时、并行与损坏文件故障注入未完成；Office 格式测试进程在本机 15 秒夹具期限内被终止 |
 | 硬件加速和回退 | 新版 FFmpeg NVENC / AMF；失败重试软件编码 | RTX 5070 Laptop 实际 NVENC 通过；不支持的 AMF 失败后软件回退通过；AMD 实体硬件编码未验收 |
 | CD 抓轨 | Windows 原生设备接口、SafeFileHandle | 已实现；本机无光驱和音频 CD，3 个 CD 预设未实测 |
 | 批量与并发 | 主进程有界调度，每任务独立工作进程 | 并发输出目标预留及转换请求通过；大量文件和长时间压力测试未完成 |
@@ -59,7 +59,8 @@
 
 - 核心/媒体/预设/GPU：tests/FileConverter.Tests/TestResults/core-media-final.trx，49 项通过。
 - 3.0.2 版本/升级回归：tests/FileConverter.Tests/TestResults/core-shell-fix.trx，22 项通过（包含在上述核心测试范围中，不重复累计）。
-- Office：office-safe-identity.trx 的 Word/PowerPoint 两项及 office-excel-stage.trx 的 Excel 一项通过。后者包括两个真实输出，约 108 秒（含样本文档创建）；本机默认网络打印机使 Office 启动变慢。
+- Office 历史 COM 测试结果不适用于本版。2026-11-02 的 LibreOffice 26.8.2 集成测试使用有效 ODT 来源，DOC 导出在夹具 15 秒期限内没有退出并被取消；本次没有 Microsoft Office 进程启动。改用 `soffice.com`、设置 LibreOffice 工作目录及校正用户配置 URI 后仍复现。当前机器 `Get-Printer` 未返回可用队列。打印机等待根因尚未证明，真实无打印机/不可达打印机验收仍是发布阻塞。
+- MSI 3.0.5 已通过 WiX 6 编译并包含安装 UI 和 GPL 许可页；尚未在干净测试账户实际验证欢迎页、自定义安装路径、安装/卸载及 Explorer PID 不变。WiX 对两个无版本语言资源仍有 WIX1101 警告。
 - 原版窗口/保存撤销/七种图片输出自动转换/退出时更新/不完整注册保护及注册失败回滚：tests/FileConverter.UiTests/TestResults/original-workflow.trx，12 项通过。
 - 修改前恢复点及两名子代理的代码审查结果：docs/REVIEW-20261102.md。
 - 本机实际升级证据：artifacts/upgrade-3.0.2-result.json、artifacts/msi-upgrade-3.0.2.log；Explorer 未被关闭，安装子进程 Session=1。是否已在该 Explorer 中点击并使用修正版，仍须单独核实。

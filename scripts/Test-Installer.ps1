@@ -1,14 +1,14 @@
-param([string]$Msi=(Join-Path $PSScriptRoot '..\installer\bin\x64\Release\FileConverter-3.0.3-win-x64.msi'))
+param([string]$Msi=(Join-Path $PSScriptRoot '..\installer\bin\x64\Release\FileConverterNext-3.0.5-win-x64.msi'))
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $msiFile=(Resolve-Path -LiteralPath $Msi).Path
-$installDirectory=Join-Path $env:LOCALAPPDATA 'Programs\FileConverter'
-$dataDirectory=Join-Path $env:LOCALAPPDATA 'FileConverter'
+$installDirectory=Join-Path $env:LOCALAPPDATA 'Programs\File Converter Next'
+$dataDirectory=Join-Path $env:LOCALAPPDATA 'FileConverterNext'
 $settingsFile=Join-Path $dataDirectory 'settings.json'
 $menuFile=Join-Path $dataDirectory 'menu.bin'
-$handler='Software\Classes\*\shellex\ContextMenuHandlers\FileConverter.Modern'
-$aotClass='Software\Classes\CLSID\{61699489-9EEA-43D6-BF5B-32DB32B7A201}'
-$cppClass='Software\Classes\CLSID\{61699489-9EEA-43D6-BF5B-32DB32B7A202}'
+$handler='Software\Classes\*\shellex\ContextMenuHandlers\FileConverterNext.Modern'
+$aotClass='Software\Classes\CLSID\{61699489-9EEA-43D6-BF5B-32DB32B7A301}'
+$cppClass='Software\Classes\CLSID\{61699489-9EEA-43D6-BF5B-32DB32B7A302}'
 if(Test-Path -LiteralPath $installDirectory){throw 'Installer acceptance requires an absent target directory; existing installation is preserved.'}
 foreach($key in @($handler,$aotClass,$cppClass)){
     $existing=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($key)
@@ -42,11 +42,11 @@ try{
     $installCode=Run-Msi @('/i',$msiFile,'/qn','/norestart','/l*v',(Join-Path $repoRoot 'artifacts\msi-install.log'))
     $installed=$installCode -in @(0,3010)
     Assert-True $installed 'Per-user MSI installs successfully'
-    $exe=Join-Path $installDirectory 'FileConverter.exe'
+    $exe=Join-Path $installDirectory 'FileConverterNext.exe'
     Assert-True (Test-Path -LiteralPath $exe) 'Installed executable exists'
     $installedHandler=Registry-Value $handler
     Write-Host ('Installed handler: '+$installedHandler)
-    Assert-True ($installedHandler -eq '{61699489-9EEA-43D6-BF5B-32DB32B7A201}') 'Default menu uses NativeAOT'
+    Assert-True ($installedHandler -eq '{61699489-9EEA-43D6-BF5B-32DB32B7A301}') 'Default menu uses NativeAOT'
     foreach($mode in @('NativeCpp','NativeAot')){
         $configuration=Get-Content -Raw -LiteralPath $settingsFile | ConvertFrom-Json
         $configuration.Shell.Mode=$mode
@@ -54,7 +54,7 @@ try{
         Assert-True ((Run-Process $exe @('--apply-shell-mode')) -eq 0) ("Apply "+$mode+" succeeds")
         $chosen=if($mode -eq 'NativeAot'){$aotClass}else{$cppClass}
         $other=if($mode -eq 'NativeAot'){$cppClass}else{$aotClass}
-        Assert-True ((Registry-Value ($chosen+'\InprocServer32')) -like ('*FileConverter.Shell.'+$mode+'.dll')) ($mode+' server path is correct')
+        Assert-True ((Registry-Value ($chosen+'\InprocServer32')) -like ('*FileConverterNext.Shell.'+$mode+'.dll')) ($mode+' server path is correct')
         Assert-True ($null -eq (Registry-Value ($other+'\InprocServer32'))) ($mode+' leaves only one COM server registered')
     }
 }

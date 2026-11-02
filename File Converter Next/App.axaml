@@ -1,0 +1,23 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="FileConverterNext.Desktop.App"
+             xmlns:local="using:FileConverterNext.Desktop"
+             RequestedThemeVariant="Light">
+             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+    <Application.DataTemplates>
+        <local:ViewLocator />
+    </Application.DataTemplates>
+
+    <Application.Styles>
+        <FluentTheme />
+        <Style Selector="Window"><Setter Property="Background" Value="#FCF8F6"/><Setter Property="Foreground" Value="#202020"/><Setter Property="FontSize" Value="13"/></Style>
+        <Style Selector="Button"><Setter Property="CornerRadius" Value="0"/><Setter Property="MinHeight" Value="28"/><Setter Property="Padding" Value="6,3"/><Setter Property="Background" Value="#FDFDFD"/><Setter Property="BorderBrush" Value="#D0D0D0"/></Style>
+        <Style Selector="Button.tile"><Setter Property="Padding" Value="2"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderBrush" Value="Transparent"/></Style>
+        <Style Selector="Button.status"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="FontSize" Value="13"/></Style>
+        <Style Selector="Button.link"><Setter Property="Foreground" Value="#0171BB"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+        <Style Selector="TextBox"><Setter Property="CornerRadius" Value="0"/><Setter Property="MinHeight" Value="28"/></Style>
+        <Style Selector="ComboBox"><Setter Property="CornerRadius" Value="0"/><Setter Property="MinHeight" Value="29"/></Style>
+        <Style Selector="TabItem"><Setter Property="Padding" Value="10,5"/><Setter Property="FontSize" Value="13"/></Style>
+    </Application.Styles>
+</Application>

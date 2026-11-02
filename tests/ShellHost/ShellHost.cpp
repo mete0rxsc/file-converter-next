@@ -13,10 +13,10 @@
 
 static void require(bool value,const char* message){if(!value)throw std::runtime_error(message);}
 static std::filesystem::path appData(){
-    wchar_t fixture[32768];auto length=GetEnvironmentVariableW(L"FILECONVERTER_SHELL_TEST_ROOT",fixture,32768);
+    wchar_t fixture[32768];auto length=GetEnvironmentVariableW(L"FILECONVERTERNEXT_SHELL_TEST_ROOT",fixture,32768);
     if(length>0&&length<32768)return std::filesystem::absolute(fixture);
     PWSTR text=nullptr;require(SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData,0,nullptr,&text)),"appdata");
-    std::filesystem::path p(text);CoTaskMemFree(text);return p/L"FileConverter";
+    std::filesystem::path p(text);CoTaskMemFree(text);return p/L"FileConverterNext";
 }
 static void int32(std::ofstream& out,int n){out.write((char*)&n,4);}
 static void text(std::ofstream& out,const std::wstring& value){
@@ -51,11 +51,11 @@ struct TestRootGuard{
     TestRootGuard(){
         wchar_t temp[32768],id[40];GUID guid;
         require(GetTempPathW(32768,temp)!=0&&SUCCEEDED(CoCreateGuid(&guid)),"isolated test directory");
-        StringFromGUID2(guid,id,40);root=std::filesystem::path(temp)/(std::wstring(L"FileConverter-ShellHost-")+id);
+        StringFromGUID2(guid,id,40);root=std::filesystem::path(temp)/(std::wstring(L"FileConverterNext-ShellHost-")+id);
         std::filesystem::create_directories(root);
-        require(SetEnvironmentVariableW(L"FILECONVERTER_SHELL_TEST_ROOT",root.c_str())!=0,"test environment");
+        require(SetEnvironmentVariableW(L"FILECONVERTERNEXT_SHELL_TEST_ROOT",root.c_str())!=0,"test environment");
     }
-    ~TestRootGuard(){SetEnvironmentVariableW(L"FILECONVERTER_SHELL_TEST_ROOT",nullptr);std::error_code error;std::filesystem::remove_all(root,error);}
+    ~TestRootGuard(){SetEnvironmentVariableW(L"FILECONVERTERNEXT_SHELL_TEST_ROOT",nullptr);std::error_code error;std::filesystem::remove_all(root,error);}
 };
 class Data final:public IDataObject{
     std::atomic<ULONG> refs{1};std::vector<std::wstring> paths;
@@ -107,16 +107,20 @@ int wmain(int argc,wchar_t** argv){
         if(argc==4){
             auto previous=LoadLibraryW(argv[3]);require(previous!=nullptr,"load previously pinned AOT");
             auto previousGet=(HRESULT(__stdcall*)(REFCLSID,REFIID,void**))GetProcAddress(previous,"DllGetClassObject");
-            CLSID previousId;CLSIDFromString(L"{61699489-9EEA-43D6-BF5B-32DB32B7A101}",&previousId);
             IClassFactory* previousFactory=nullptr;
-            require(previousGet&&SUCCEEDED(previousGet(previousId,IID_IClassFactory,(void**)&previousFactory)),"pin previously loaded AOT");
+            require(previousGet!=nullptr,"previous AOT exports");
+            for(const auto& value:{L"{61699489-9EEA-43D6-BF5B-32DB32B7A201}",L"{61699489-9EEA-43D6-BF5B-32DB32B7A101}"}){
+                CLSID previousId;CLSIDFromString(value,&previousId);
+                if(SUCCEEDED(previousGet(previousId,IID_IClassFactory,(void**)&previousFactory)))break;
+            }
+            require(previousFactory!=nullptr,"pin previously loaded AOT");
             previousFactory->Release();
         }
         auto dll=LoadLibraryW(argv[1]);require(dll!=nullptr,"LoadLibrary failed");
         auto get=(HRESULT(__stdcall*)(REFCLSID,REFIID,void**))GetProcAddress(dll,"DllGetClassObject");
         auto unload=(HRESULT(__stdcall*)())GetProcAddress(dll,"DllCanUnloadNow");
         require(get&&unload,"missing exports");
-        CLSID id;CLSIDFromString(std::wstring(argv[2])==L"aot"?L"{61699489-9EEA-43D6-BF5B-32DB32B7A201}":L"{61699489-9EEA-43D6-BF5B-32DB32B7A202}",&id);
+        CLSID id;CLSIDFromString(std::wstring(argv[2])==L"aot"?L"{61699489-9EEA-43D6-BF5B-32DB32B7A301}":L"{61699489-9EEA-43D6-BF5B-32DB32B7A302}",&id);
         IClassFactory* factory=nullptr;require(SUCCEEDED(get(id,IID_IClassFactory,(void**)&factory)),"factory");
         IShellExtInit* init=nullptr;require(SUCCEEDED(factory->CreateInstance(nullptr,IID_IShellExtInit,(void**)&init)),"create");
         IContextMenu* menu=nullptr;require(SUCCEEDED(init->QueryInterface(IID_IContextMenu,(void**)&menu)),"menu interface");
@@ -125,6 +129,8 @@ int wmain(int argc,wchar_t** argv){
         for(int i=0;i<20;i++){
             HMENU parent=CreatePopupMenu();auto hr=menu->QueryContextMenu(parent,0,100,200,0);
             require(SUCCEEDED(hr)&&HRESULT_CODE(hr)==3,"command count");
+            wchar_t productLabel[100]{};GetMenuStringW(parent,0,productLabel,100,MF_BYPOSITION);
+            require(std::wstring(productLabel)==L"File Converter Next","product menu name");
             require(GetMenuState(parent,100,MF_BYCOMMAND)&MF_GRAYED,"mixed preset must be disabled");
             DestroyMenu(parent);
         }
@@ -133,7 +139,7 @@ int wmain(int argc,wchar_t** argv){
         parent=CreatePopupMenu();require(HRESULT_CODE(menu->QueryContextMenu(parent,0,100,200,CMF_DEFAULTONLY))==0,"default-only");
         require(HRESULT_CODE(menu->QueryContextMenu(parent,0,100,200,0))==3,"refresh");
         wchar_t verb[100]{};require(SUCCEEDED(menu->GetCommandString(1,GCS_VERBW,nullptr,(char*)verb,100)),"unicode canonical");
-        require(std::wstring(verb)==L"fileconverter.webp","canonical mismatch");
+        require(std::wstring(verb)==L"fileconverternext.webp","canonical mismatch");
         char ansi[100]{};require(SUCCEEDED(menu->GetCommandString(1,GCS_VERBA,nullptr,ansi,100)),"ansi canonical");
         wchar_t helpWide[100]{};char helpAnsi[100]{},expectedAnsi[100]{};
         require(SUCCEEDED(menu->GetCommandString(0,GCS_HELPTEXTW,nullptr,(char*)helpWide,100)),"Unicode help text");
@@ -162,7 +168,7 @@ int wmain(int argc,wchar_t** argv){
             char actual[100]{};
             require(SUCCEEDED(menu->GetCommandString(offset,GCS_VERBA,nullptr,actual,100)),"format canonical");
             auto expected=std::string("format.")+format;
-            require(std::string(actual)=="fileconverter."+expected,"format order mismatch");
+            require(std::string(actual)=="fileconverternext."+expected,"format order mismatch");
             CMINVOKECOMMANDINFOEX click{};click.cbSize=sizeof(click);click.fMask=CMIC_MASK_UNICODE;click.lpVerb=MAKEINTRESOURCEA(offset);
             require(SUCCEEDED(menu->InvokeCommand((CMINVOKECOMMANDINFO*)&click)),"format click");waitCapture(expected);
             numeric.lpVerb=MAKEINTRESOURCEA(offset);
@@ -180,7 +186,7 @@ int wmain(int argc,wchar_t** argv){
         require(SUCCEEDED(menu->InvokeCommand((CMINVOKECOMMANDINFO*)&wide)),"numeric offset must come from lpVerb rather than lpVerbW");waitCapture("webp");
         wide.lpVerb=MAKEINTRESOURCEA(65535);wide.lpVerbW=nullptr;
         require(FAILED(menu->InvokeCommand((CMINVOKECOMMANDINFO*)&wide)),"Unicode flag must not turn invalid numeric verb into first preset");
-        wide.lpVerb="fileconverter.webp";wide.lpVerbW=nullptr;
+        wide.lpVerb="fileconverternext.webp";wide.lpVerbW=nullptr;
         require(FAILED(menu->InvokeCommand((CMINVOKECOMMANDINFO*)&wide)),"null Unicode string verb must not invoke first preset");
         DestroyMenu(parent);
         // Corrupt configuration must fail without crashing the host.

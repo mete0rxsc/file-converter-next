@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net10.0-windows</TargetFramework><OutputType>Exe</OutputType><AssemblyName>FileConverterNext.Worker</AssemblyName><AllowUnsafeBlocks>true</AllowUnsafeBlocks></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../FileConverterNext.Core/FileConverterNext.Core.csproj" />
+    <PackageReference Include="Magick.NET-Q16-AnyCPU" Version="15.0.0" />
+  </ItemGroup>
+</Project>

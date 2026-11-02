@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <AssemblyName>FileConverterNext.Shell.NativeAot</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../FileConverterNext.Shell.Protocol/FileConverterNext.Shell.Protocol.csproj" /></ItemGroup>
+</Project>

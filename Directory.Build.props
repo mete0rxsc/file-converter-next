@@ -5,8 +5,12 @@
     <LangVersion>latest</LangVersion>
     <Deterministic>true</Deterministic>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-    <Version>3.0.3</Version>
-    <Authors>FileConverter contributors</Authors>
+    <Version>3.0.5</Version>
+    <Authors>Mete0r; File Converter contributors</Authors>
+    <Product>File Converter Next</Product>
+    <Description>File Converter Next — context menu file conversion, reconstructed by Mete0r.</Description>
+    <RepositoryUrl>https://github.com/mete0rxsc/file-converter-next</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/mete0rxsc/file-converter-next</PackageProjectUrl>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
   </PropertyGroup>
 </Project>

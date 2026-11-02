@@ -1,0 +1,4 @@
+LIBRARY FileConverterNext.Shell.NativeCpp.dll
+EXPORTS
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE
