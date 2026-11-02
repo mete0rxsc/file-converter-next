@@ -98,7 +98,10 @@ jobs:
           }
           gh release upload $env:GITHUB_REF_NAME @assets --repo $env:GITHUB_REPOSITORY --clobber
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $releaseJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/tags/$env:GITHUB_REF_NAME"
+          $releaseJson = gh release view $env:GITHUB_REF_NAME --repo $env:GITHUB_REPOSITORY --json databaseId
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $releaseId = ($releaseJson | ConvertFrom-Json).databaseId
+          $releaseJson = gh api "repos/$env:GITHUB_REPOSITORY/releases/$releaseId"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           $release = $releaseJson | ConvertFrom-Json
           foreach ($path in $assets) {
