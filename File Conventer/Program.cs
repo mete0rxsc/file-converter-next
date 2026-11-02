@@ -24,7 +24,7 @@ sealed class Program
                 System.IO.Directory.CreateDirectory(directory);
                 System.IO.File.AppendAllText(System.IO.Path.Combine(directory, "shell-integration.log"), DateTimeOffset.Now.ToString("O") + " " + message + Environment.NewLine);
             }
-            Trace("User=" + System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value + "; Target=" + command.IntegrationUserSid + "; Data=" + dataDirectory + "; Register=" + command.Register + "; Unregister=" + command.Unregister);
+            Trace("User=" + System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value + "; Session=" + System.Diagnostics.Process.GetCurrentProcess().SessionId + "; Target=" + command.IntegrationUserSid + "; Data=" + dataDirectory + "; Register=" + command.Register + "; Unregister=" + command.Unregister);
             if (command.Version) { Console.WriteLine("FileConverter " + UpdateService.CurrentVersion); return 0; }
             if (command.Unregister) { ShellRegistration.Unregister(command.IntegrationUserSid); Trace("Registered=" + ShellRegistration.IsRegistered(command.IntegrationUserSid)); return 0; }
             if (command.Register || command.ApplyShell)
@@ -32,8 +32,7 @@ sealed class Program
                 // MSI service custom actions must target the installing user's
                 // profile explicitly; HKCU in a service may point to SYSTEM.
                 var settings = new SettingsStore(System.IO.Path.Combine(dataDirectory, "settings.json")).Load();
-                ShellRegistration.WriteSnapshot(settings, Environment.ProcessPath!, "配置预设…", dataDirectory);
-                ShellRegistration.Apply(settings, AppContext.BaseDirectory, command.IntegrationUserSid);
+                ShellRegistration.Register(settings, AppContext.BaseDirectory, Environment.ProcessPath!, "配置预设…", dataDirectory, command.IntegrationUserSid);
                 if (!ShellRegistration.IsRegistered(command.IntegrationUserSid)) throw new InvalidOperationException("右键菜单注册检查失败。");
                 Trace("Registered=True; Mode=" + settings.Shell.Mode);
                 return 0;

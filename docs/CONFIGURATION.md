@@ -35,7 +35,9 @@ Mode 可为 NativeAot 或 NativeCpp。这是故障库替换的内部实现选项
 & '.\FileConverter.exe' --unregister-shell-extension
 ~~~
 
-只注册一个处理器。AOT DLL 固定驻留宿主生命周期，不能卸载；C++ 支持 COM 标准卸载。切换、升级或注销后，应退出并重启已加载 DLL 的宿主。Windows 11 的菜单位置与原版一致，位于传统菜单（通常经「显示更多选项」进入）。不会注册默认打开关联。
+只注册一个处理器。AOT DLL 固定驻留宿主生命周期，不能卸载；C++ 支持 COM 标准卸载。3.0.2 使用 shell\3.0.2 独立目录及新的内部 COM 标识，避免继续使用之前测试版已驻留的错误实现。注册完成会发送 Windows 菜单关联变更通知。旧 DLL 的内存由宿主自然退出时释放。
+
+安装工程恢复上游 Installer/Product.wxs 中的 MSIRESTARTMANAGERCONTROL=Disable，不要求关闭或重启 Explorer。Windows 11 的菜单位置与原版一致，位于传统菜单（通常经「显示更多选项」进入）。不会注册默认打开关联。
 
 新版注册前检测旧 FileConverter 和 SharpShell CLSID；存在旧版时需要先自行卸载旧版。程序不自动卸载旧版、不恢复旧缺陷扩展、不结束 Explorer 或 Kitopia。
 
@@ -71,6 +73,8 @@ dotnet test '.\tests\FileConverter.Tests\FileConverter.Tests.csproj'
 dotnet test '.\tests\FileConverter.UiTests\FileConverter.UiTests.csproj' -c Release
 ~~~
 
-artifacts\publish\FileConverter.exe 为完整免安装目录的入口，artifacts\FileConverter-3.0.1-win-x64.zip 为压缩包，installer\bin\x64\Release\*.msi 为安装包。
+需要验证旧测试版 AOT 已驻留时的兼容性，可运行 `.\scripts\Test-Shell.ps1 -PreviousAot '旧DLL的完整路径'`。加载只发生在隔离的原生测试宿主内，使用临时菜单快照，不修改用户菜单注册。
+
+artifacts\publish\FileConverter.exe 为完整免安装目录的入口，artifacts\FileConverter-3.0.2-win-x64.zip 为压缩包，installer\bin\x64\Release\*.msi 为安装包。
 
 依赖版本及 SHA-256 锁定在 scripts\dependencies.lock.json。FFmpeg 发布者的 latest 资产可能变更；脚本会拒绝与锁定哈希不符的文件，须经审查后更新锁文件，不自动信任新文件。

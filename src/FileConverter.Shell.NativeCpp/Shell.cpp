@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <cstring>
 
-static const CLSID ClassId = {0x61699489,0x9eea,0x43d6,{0xbf,0x5b,0x32,0xdb,0x32,0xb7,0xa1,0x02}};
+static const CLSID ClassId = {0x61699489,0x9eea,0x43d6,{0xbf,0x5b,0x32,0xdb,0x32,0xb7,0xa2,0x02}};
 static std::atomic<long> live{0}, locks{0};
 static HMODULE module;
 static std::wstring widen(const std::string& input) {
@@ -235,7 +235,11 @@ public:
             if(!buffer||!count)return E_INVALIDARG;
             auto value=type==GCS_VERBA||type==GCS_VERBW?canonical(id):commands[id].preset<0?L"File Converter":snapshot.presets[commands[id].preset].name;
             if(type&GCS_UNICODE){auto n=std::min(value.size(),(size_t)count-1);memcpy(buffer,value.data(),n*sizeof(wchar_t));((wchar_t*)buffer)[n]=0;}
-            else {auto value8=utf8(value);auto n=std::min(value8.size(),(size_t)count-1);memcpy(buffer,value8.data(),n);buffer[n]=0;}
+            else {
+                auto length=(int)value.size();
+                while(length>0&&(UINT)WideCharToMultiByte(CP_ACP,0,value.data(),length,nullptr,0,nullptr,nullptr)>count-1)length--;
+                auto n=length==0?0:WideCharToMultiByte(CP_ACP,0,value.data(),length,buffer,(int)count-1,nullptr,nullptr);buffer[n]=0;
+            }
             return S_OK;
         }catch(...){return E_FAIL;}
     }

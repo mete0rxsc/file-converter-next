@@ -5,12 +5,13 @@
       "fileconverter.core": {
         "type": "Project",
         "dependencies": {
-          "FileConverter.Shell.Protocol": "[3.0.1, )"
+          "FileConverter.Shell.Protocol": "[3.0.2, )"
         }
       },
       "fileconverter.shell.protocol": {
         "type": "Project"
       }
-    }
+    },
+    "net10.0-windows7.0/win-x64": {}
   }
 }

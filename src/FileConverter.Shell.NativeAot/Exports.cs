@@ -8,7 +8,7 @@ namespace FileConverter.Shell.NativeAot;
 public static unsafe class Exports
 {
     private const int Ok = 0, False = 1, NoInterface = unchecked((int)0x80004002), Invalid = unchecked((int)0x80070057), Fail = unchecked((int)0x80004005);
-    private static readonly Guid Clsid = new("61699489-9EEA-43D6-BF5B-32DB32B7A101");
+    private static readonly Guid Clsid = new("61699489-9EEA-43D6-BF5B-32DB32B7A201");
     private static readonly Guid Unknown = new("00000000-0000-0000-C000-000000000046"), FactoryId = new("00000001-0000-0000-C000-000000000046");
     private static readonly Guid InitId = new("000214E8-0000-0000-C000-000000000046"), MenuId = new("000214E4-0000-0000-C000-000000000046");
     [StructLayout(LayoutKind.Sequential)] private struct Face { public void** Vtable; public nint Handle; }
@@ -266,8 +266,13 @@ public static unsafe class Exports
             }
             else
             {
-                var bytes = Encoding.ASCII.GetBytes(text); var count = Math.Min(bytes.Length, checked((int)size) - 1);
-                bytes.AsSpan(0, count).CopyTo(new Span<byte>(buffer, count)); buffer[count] = 0;
+                fixed (char* input = text)
+                {
+                    var length = text.Length;
+                    while (length > 0 && Native.WideCharToMultiByte(0, 0, input, length, null, 0, 0, 0) > size - 1) length--;
+                    var count = length == 0 ? 0 : Native.WideCharToMultiByte(0, 0, input, length, buffer, checked((int)size) - 1, 0, 0);
+                    buffer[count] = 0;
+                }
             }
             return Ok;
         }

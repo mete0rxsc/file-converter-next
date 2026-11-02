@@ -2,14 +2,14 @@
 
 目标：.NET 10 / C# / Avalonia，保持原项目的右键菜单入口、窗口结构和操作。功能基线为 Tichau/FileConverter 提交 5dce6c0980635e3a6ae8d8acff235bcc9b1441a4。没有独立转换工作台：不添加文件选择、拖入文件、手动开始转换、主题切换等新交互。Shell 的两种实现和工作进程属于替换故障组件的内部实现。
 
-截至 2026-11-01，本实现尚未满足“全部真实环境验收完成”。已具备源码、发布构建和下面列明的验证证据，禁止把未验收项算作通过。
+截至 2026-11-02，本实现尚未满足“全部真实环境验收完成”。已具备源码、发布构建和下面列明的验证证据，禁止把未验收项算作通过。
 
 ## 窗口和使用流程
 
 | 上游行为 | 迁移实现 | 验证结果 |
 |---|---|---|
 | 无参数启动显示右键使用说明及 GIF 演示 | HelpWindow、UsageAnimation；不使用 WpfAnimatedGif | Headless 窗口路由、资源加载及渲染通过，交互动画长时间播放待人工验收 |
-| 右键选预设立即转换 | 两种 Shell → 唯一请求文件 → 主进程 → 工作进程 | 独立原生宿主验证两种 DLL；UI 集成测试实际提交中文 PNG→WebP 请求并自动完成 |
+| 右键选预设立即转换 | 两种 Shell → 唯一请求文件 → 主进程 → 工作进程 | 原生宿主逐项验证七种图片输出的菜单请求 ID；UI 集成测试实际提交中文 PNG→GIF/WebP/JPG/PNG/ICO/AVIF/PDF 请求，验证输出扩展名和文件存在 |
 | 转换主窗口只显示任务、进度、取消、日志和设置入口 | 950×500 MainWindow；原版图标和状态色 | Headless 渲染通过；确认没有转换工作台页签、文件选择器和开始按钮 |
 | 单独设置窗口，转换预设 / 应用 / 关于三个页签 | 1050×700 SettingsWindow | 三个页签渲染通过 |
 | 修改预设，切换选择保留编辑；保存关闭，直接关闭撤销 | 编辑事务、SettingsSaved、EndSettingsEdit | UI 测试通过 |
@@ -48,8 +48,9 @@
 | NativeAOT DLL | 原生导出、COM vtable、宿主生命周期固定驻留、DllCanUnloadNow=S_FALSE | 原生宿主测试通过 |
 | C++ DLL | 标准 COM 引用计数及卸载 | 原生宿主测试通过 |
 | 共用菜单协议和测试 | 数字 verb（含 Unicode 标志及空 lpVerbW）、64 位 ANSI/Unicode 字符串 verb、请求预设 ID 一致性、编号边界、混合选择、损坏快照、重复菜单、引用计数/卸载、唯一请求文件 | 修复前两种实现均可复现 WebP 请求错发；修复后通过原生宿主回归。宿主使用独立临时快照，不替换用户菜单；发布脚本在打包前执行该检查 |
-| Explorer / Kitopia | 只加载新 DLL；不注册旧缺陷扩展 | 用户确认 Explorer 菜单可见，并发现点击 WebP 实际生成 GIF；已在两种 DLL 的原生宿主中复现并修复 Unicode 标志下数字命令编号误读，修正版为 3.0.1。真实 Explorer 重载修正版后的复验及 Kitopia 验收仍待完成 |
-| MSI、ZIP | per-user MSI、完整免安装目录与 ZIP，启动条件检查旧版，默认 NativeAOT | 构建及安装返回 0、文件部署通过，用户确认菜单可见；工具进程与安装子进程的注册表读取差异仍存在。卸载注册清理及升级的完整验收未完成；旧版阻止仅测启动条件属性样例，未注册旧扩展 |
+| Explorer / Kitopia | 只加载新 DLL；不注册旧缺陷扩展 | 用户确认菜单可见但选择不同格式均得到 GIF。本轮查明安装和驻留 DLL 仍为 3.0.0，快照却指向另一份 3.0.1 主程序。3.0.2 使用独立 Shell 路径和新的内部 COM 标识；真实菜单复验及 Kitopia 验收仍待完成 |
+| 安装时不关闭 Explorer | 恢复上游 Installer/Product.wxs 的 MSIRESTARTMANAGERCONTROL=Disable；不结束宿主；注册后 SHChangeNotify | 3.0.0→3.0.2 实际升级返回 0，Explorer PID 16964 和启动时间保持不变；新主程序和双 DLL 哈希与发布目录一致 |
+| MSI、ZIP | per-user MSI、完整免安装目录与 ZIP，启动条件检查旧版，默认 NativeAOT | 构建、安装及本机 3.0.0→3.0.2 升级通过；用户设置及旧 XML 哈希不变；完整卸载、升级失败回滚及其他账户场景未验收。旧版阻止仅测启动条件属性样例，未注册旧扩展 |
 | 更新 | 空仓库不联网；配置 owner/repo 后检查、版本比较、说明、后台下载、取消、SHA-256 校验；依原版在退出时启动 MSI | HTTP 模拟、下载校验及窗口关闭后等待退出的 UI 回归通过；实际 GitHub 测试源发布到安装的完整升级流程未验收 |
 | 依赖 | 维护中的版本与 SHA-256 锁定；NuGet 漏洞扫描 | artifacts/dependency-audit.json 未报已知 NuGet 漏洞；原生 delegate 不能由该扫描完全覆盖 |
 | 发布许可/签名 | GPLv3、署名、第三方说明随包 | 开发构建未签名；对外发布者仍须提供准确对应的 GPL/AGPL 源码和构建资料 |
@@ -57,9 +58,11 @@
 ## 验证记录
 
 - 核心/媒体/预设/GPU：tests/FileConverter.Tests/TestResults/core-media-final.trx，49 项通过。
-- 3.0.1 版本/升级回归：tests/FileConverter.Tests/TestResults/core-shell-fix.trx，22 项通过（包含在上述核心测试范围中，不重复累计）。
+- 3.0.2 版本/升级回归：tests/FileConverter.Tests/TestResults/core-shell-fix.trx，22 项通过（包含在上述核心测试范围中，不重复累计）。
 - Office：office-safe-identity.trx 的 Word/PowerPoint 两项及 office-excel-stage.trx 的 Excel 一项通过。后者包括两个真实输出，约 108 秒（含样本文档创建）；本机默认网络打印机使 Office 启动变慢。
-- 原版窗口/保存撤销/右键自动转换/退出时更新：tests/FileConverter.UiTests/TestResults/original-workflow.trx，4 项通过。
+- 原版窗口/保存撤销/七种图片输出自动转换/退出时更新/不完整注册保护及注册失败回滚：tests/FileConverter.UiTests/TestResults/original-workflow.trx，12 项通过。
+- 修改前恢复点及两名子代理的代码审查结果：docs/REVIEW-20261102.md。
+- 本机实际升级证据：artifacts/upgrade-3.0.2-result.json、artifacts/msi-upgrade-3.0.2.log；Explorer 未被关闭，安装子进程 Session=1。是否已在该 Explorer 中点击并使用修正版，仍须单独核实。
 - 最新窗口截图：artifacts/screenshots/conversion-success.png、settings-0.png、settings-1.png、settings-2.png、help.png、diagnostics.png、upgrade.png、upgrade-ready.png。历史 page-*.png 为已撤回工作台的旧证据，不代表当前界面。
 - 安装上下文诊断：artifacts/registry-probe/bin/Release/net10.0-windows/msi.txt 与 normal.txt。独立 MSI 探针在安装服务的用户子进程中可读已有 NativeAOT 处理器；普通工具子进程同 SID、同完整注册表路径却读取不到。探针自身测试键已清理，不据此推断 Explorer 结果或历史崩溃根因。
 - 预设逐项代表样本报告：artifacts/preset-acceptance.json。

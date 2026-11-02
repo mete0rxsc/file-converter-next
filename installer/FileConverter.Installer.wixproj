@@ -1,6 +1,6 @@
 <Project Sdk="WixToolset.Sdk/6.0.2">
   <PropertyGroup>
-    <OutputType>Package</OutputType><Platform>x64</Platform><OutputName>FileConverter-3.0.1-win-x64</OutputName>
+    <OutputType>Package</OutputType><Platform>x64</Platform><OutputName>FileConverter-3.0.2-win-x64</OutputName>
     <InstallerPlatform>x64</InstallerPlatform>
     <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)..\artifacts\publish</PublishDir>
     <DefineConstants>PublishDir=$(PublishDir)</DefineConstants>

@@ -5,6 +5,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FileConverter.Core;
+using FileConverter.Windows;
 using File_Conventer;
 using File_Conventer.ViewModels;
 using File_Conventer.Views;
@@ -21,6 +22,42 @@ public static class TestApplication
 }
 public sealed class WindowTests
 {
+    [Fact]
+    public void FailedRegistrySwitchRestoresPreviousHandlerClassesAndExecutable()
+    {
+        var sandbox = @"Software\FileConverter.RegistrationTests\" + Guid.NewGuid().ToString("N");
+        using var user = Microsoft.Win32.RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.CurrentUser, Microsoft.Win32.RegistryView.Registry64);
+        try
+        {
+            using var root = user.CreateSubKey(sandbox);
+            const string previousClass = "{61699489-9EEA-43D6-BF5B-32DB32B7A101}";
+            const string handler = @"Software\Classes\*\shellex\ContextMenuHandlers\FileConverter.Modern";
+            using (var key = root.CreateSubKey(handler)) key.SetValue("", previousClass);
+            using (var key = root.CreateSubKey(@"Software\Classes\CLSID\" + previousClass + @"\InprocServer32")) key.SetValue("", "previous.dll");
+            using (var key = root.CreateSubKey(@"Software\FileConverter.Modern")) { key.SetValue("Executable", "previous.exe"); key.SetValue("Unrelated", "preserve"); }
+            Assert.Throws<IOException>(() => ShellRegistration.RegisterKeys(root, ShellRegistration.AotClassId, "new.dll", "new.exe", () => throw new IOException("Injected registration failure")));
+            using var restoredHandler = root.OpenSubKey(handler); Assert.Equal(previousClass, restoredHandler!.GetValue(""));
+            using var restoredClass = root.OpenSubKey(@"Software\Classes\CLSID\" + previousClass + @"\InprocServer32"); Assert.Equal("previous.dll", restoredClass!.GetValue(""));
+            using var restoredMarker = root.OpenSubKey(@"Software\FileConverter.Modern"); Assert.Equal("previous.exe", restoredMarker!.GetValue("Executable")); Assert.Equal("preserve", restoredMarker.GetValue("Unrelated"));
+            using var failedClass = root.OpenSubKey(@"Software\Classes\CLSID\" + ShellRegistration.AotClassId); Assert.Null(failedClass);
+        }
+        finally { user.DeleteSubKeyTree(sandbox, false); }
+    }
+    [Fact]
+    public void IncompleteShellRegistrationPreservesExistingMenu()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "FileConverter-registration-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            var menu = Path.Combine(root, "menu.bin");
+            byte[] original = "existing menu fixture"u8.ToArray(); File.WriteAllBytes(menu, original);
+            var executable = Path.Combine(root, "FileConverter.exe"); File.WriteAllBytes(executable, []);
+            Assert.Throws<FileNotFoundException>(() => ShellRegistration.Register(SettingsStore.LoadDefaults(), root, executable, "Settings", root));
+            Assert.Equal(original, File.ReadAllBytes(menu));
+        }
+        finally { Directory.Delete(root, true); }
+    }
     private static string Repo => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
     private static void Capture(Window window, string name)
     {
@@ -136,28 +173,37 @@ public sealed class WindowTests
             var digest = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
             HttpContent content = request.RequestUri!.Host == "api.github.com" ? new StringContent(JsonSerializer.Serialize(new
             {
-                tag_name = "v3.0.2", body = "更新说明", assets = new[] { new { name = "FileConverter-win-x64.msi", browser_download_url = "https://example.invalid/update.msi", digest = "sha256:" + digest, size = bytes.Length } }
+                tag_name = "v3.0.3", body = "更新说明", assets = new[] { new { name = "FileConverter-win-x64.msi", browser_download_url = "https://example.invalid/update.msi", digest = "sha256:" + digest, size = bytes.Length } }
             })) : new ByteArrayContent(bytes);
             return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = content });
         }
     }
-    [AvaloniaFact]
-    public async Task RightClickRequestImmediatelyConvertsWithoutWorkbench()
+    [AvaloniaTheory]
+    [InlineData(OutputType.Gif)] [InlineData(OutputType.Webp)] [InlineData(OutputType.Jpg)]
+    [InlineData(OutputType.Png)] [InlineData(OutputType.Ico)] [InlineData(OutputType.Avif)] [InlineData(OutputType.Pdf)]
+    public async Task RightClickRequestImmediatelyConvertsWithoutWorkbench(OutputType output)
     {
         var root = Path.Combine(Path.GetTempPath(), "FileConverter-ui-tests", Guid.NewGuid().ToString("N"));
         var worker = Path.Combine(Repo, "src/FileConverter.Worker/bin/Release/net10.0-windows/FileConverter.Worker.exe");
         using var vm = new MainViewModel(new SettingsStore(Path.Combine(root, "settings.json")), worker);
+        vm.Settings.Tools = new()
+        {
+            FFmpeg = Path.Combine(Repo, "artifacts/publish/tools/ffmpeg.exe"),
+            FFprobe = Path.Combine(Repo, "artifacts/publish/tools/ffprobe.exe"),
+            Ghostscript = Path.Combine(Repo, "artifacts/publish/tools/ghostscript/gswin64c.exe")
+        };
         var window = new MainWindow { DataContext = vm }; window.Show();
         try
         {
             var input = Path.Combine(root, "中文 图片.png"); File.Copy(Path.Combine(Repo, "File Conventer/Assets/SuccessIcon.png"), input);
-            var preset = vm.Presets.First(p => p.OutputType == OutputType.Webp && p.InputTypes.Contains("png"));
+            var preset = vm.Presets.First(p => p.OutputType == output && p.InputTypes.Contains("png"));
             var request = Path.Combine(root, "menu-request.json");
             await File.WriteAllTextAsync(request, JsonSerializer.Serialize(new ShellRequest(1, preset.Id.ToString("D"), [input]), AppJson.Options));
             await vm.InitializeAsync(CommandLine.Parse(["--request", request]));
             Assert.Single(vm.Jobs); Assert.Equal(JobState.Done, vm.Jobs[0].State);
             Assert.Single(vm.Jobs[0].Outputs); Assert.True(File.Exists(vm.Jobs[0].Outputs[0])); Assert.True(File.Exists(input));
-            Capture(window, "conversion-success");
+            Assert.Equal("." + output.ToString().ToLowerInvariant(), Path.GetExtension(vm.Jobs[0].Outputs[0]));
+            Capture(window, "conversion-success-" + output);
         }
         finally { window.Close(); Directory.Delete(root, true); }
     }

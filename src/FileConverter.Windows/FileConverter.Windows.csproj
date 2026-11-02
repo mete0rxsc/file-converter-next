@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0-windows</TargetFramework></PropertyGroup>
   <ItemGroup><ProjectReference Include="../FileConverter.Core/FileConverter.Core.csproj" /></ItemGroup>
+  <ItemGroup><InternalsVisibleTo Include="FileConverter.UiTests"/></ItemGroup>
 </Project>

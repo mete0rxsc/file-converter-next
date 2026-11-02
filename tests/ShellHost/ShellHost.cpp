@@ -34,9 +34,16 @@ struct SnapshotGuard{
     void write(){
         wchar_t exe[32768];GetModuleFileNameW(nullptr,exe,32768);
         std::ofstream f(file,std::ios::binary);f.write("FCM1",4);text(f,exe);text(f,L"Configure");int32(f,1);int32(f,3);
-        text(f,L"png");text(f,L"Images/PNG");int32(f,1);text(f,L"png");
+        text(f,L"png");text(f,L"Images/\x56fe\x7247PNG");int32(f,1);text(f,L"png");
         text(f,L"webp");text(f,L"Images/WebP");int32(f,2);text(f,L"png");text(f,L"jpg");
         text(f,L"wav");text(f,L"Audio/FLAC");int32(f,1);text(f,L"wav");
+    }
+    void writeFormats(){
+        wchar_t exe[32768];GetModuleFileNameW(nullptr,exe,32768);
+        std::ofstream f(file,std::ios::binary);f.write("FCM1",4);text(f,exe);text(f,L"Configure");int32(f,0);int32(f,7);
+        for(const auto& format:{L"gif",L"webp",L"jpg",L"png",L"ico",L"avif",L"pdf"}){
+            text(f,std::wstring(L"format.")+format);text(f,std::wstring(L"Images/")+format);int32(f,1);text(f,L"png");
+        }
     }
 };
 struct TestRootGuard{
@@ -92,16 +99,24 @@ static void waitCapture(const std::string& expectedPreset){
 }
 int wmain(int argc,wchar_t** argv){
     if(argc==3&&std::wstring(argv[1])==L"--request"){std::ofstream capture(std::wstring(argv[2])+L".captured");capture<<"ok";return 0;}
-    if(argc!=3){std::cerr<<"ShellHost <dll> <aot|cpp>\n";return 2;}
+    if(argc!=3&&argc!=4){std::cerr<<"ShellHost <dll> <aot|cpp> [previous-aot-dll]\n";return 2;}
     CoInitializeEx(nullptr,COINIT_APARTMENTTHREADED);
     try{
         TestRootGuard isolated;
         SnapshotGuard snapshot;snapshot.write();
+        if(argc==4){
+            auto previous=LoadLibraryW(argv[3]);require(previous!=nullptr,"load previously pinned AOT");
+            auto previousGet=(HRESULT(__stdcall*)(REFCLSID,REFIID,void**))GetProcAddress(previous,"DllGetClassObject");
+            CLSID previousId;CLSIDFromString(L"{61699489-9EEA-43D6-BF5B-32DB32B7A101}",&previousId);
+            IClassFactory* previousFactory=nullptr;
+            require(previousGet&&SUCCEEDED(previousGet(previousId,IID_IClassFactory,(void**)&previousFactory)),"pin previously loaded AOT");
+            previousFactory->Release();
+        }
         auto dll=LoadLibraryW(argv[1]);require(dll!=nullptr,"LoadLibrary failed");
         auto get=(HRESULT(__stdcall*)(REFCLSID,REFIID,void**))GetProcAddress(dll,"DllGetClassObject");
         auto unload=(HRESULT(__stdcall*)())GetProcAddress(dll,"DllCanUnloadNow");
         require(get&&unload,"missing exports");
-        CLSID id;CLSIDFromString(std::wstring(argv[2])==L"aot"?L"{61699489-9EEA-43D6-BF5B-32DB32B7A101}":L"{61699489-9EEA-43D6-BF5B-32DB32B7A102}",&id);
+        CLSID id;CLSIDFromString(std::wstring(argv[2])==L"aot"?L"{61699489-9EEA-43D6-BF5B-32DB32B7A201}":L"{61699489-9EEA-43D6-BF5B-32DB32B7A202}",&id);
         IClassFactory* factory=nullptr;require(SUCCEEDED(get(id,IID_IClassFactory,(void**)&factory)),"factory");
         IShellExtInit* init=nullptr;require(SUCCEEDED(factory->CreateInstance(nullptr,IID_IShellExtInit,(void**)&init)),"create");
         IContextMenu* menu=nullptr;require(SUCCEEDED(init->QueryInterface(IID_IContextMenu,(void**)&menu)),"menu interface");
@@ -120,6 +135,12 @@ int wmain(int argc,wchar_t** argv){
         wchar_t verb[100]{};require(SUCCEEDED(menu->GetCommandString(1,GCS_VERBW,nullptr,(char*)verb,100)),"unicode canonical");
         require(std::wstring(verb)==L"fileconverter.webp","canonical mismatch");
         char ansi[100]{};require(SUCCEEDED(menu->GetCommandString(1,GCS_VERBA,nullptr,ansi,100)),"ansi canonical");
+        wchar_t helpWide[100]{};char helpAnsi[100]{},expectedAnsi[100]{};
+        require(SUCCEEDED(menu->GetCommandString(0,GCS_HELPTEXTW,nullptr,(char*)helpWide,100)),"Unicode help text");
+        require(std::wstring(helpWide)==L"Images/\x56fe\x7247PNG","localized help text");
+        WideCharToMultiByte(CP_ACP,0,helpWide,-1,expectedAnsi,100,nullptr,nullptr);
+        require(SUCCEEDED(menu->GetCommandString(0,GCS_HELPTEXTA,nullptr,helpAnsi,100)),"ANSI help text");
+        require(std::string(helpAnsi)==expectedAnsi,"ANSI help must use Windows code page");
         CMINVOKECOMMANDINFO numeric{sizeof(numeric)};numeric.lpVerb=MAKEINTRESOURCEA(0);
         require(FAILED(menu->InvokeCommand(&numeric)),"disabled command invoked");
         numeric.lpVerb=MAKEINTRESOURCEA(65535);require(FAILED(menu->InvokeCommand(&numeric)),"invalid numeric verb");
@@ -133,7 +154,24 @@ int wmain(int argc,wchar_t** argv){
         require(SUCCEEDED(menu->InvokeCommand(&numeric)),"ANSI pointer invocation");waitCapture("webp");
         numeric.lpVerb=MAKEINTRESOURCEA(1);require(SUCCEEDED(menu->InvokeCommand(&numeric)),"numeric invocation");waitCapture("webp");
         DestroyMenu(parent);
+        snapshot.writeFormats();
+        data=new Data({L"C:\\中文 路径\\a.png"});require(SUCCEEDED(init->Initialize(nullptr,data,nullptr)),"format initialize");data->Release();
+        parent=CreatePopupMenu();require(HRESULT_CODE(menu->QueryContextMenu(parent,0,173,200,0))==8,"seven image formats and settings");
+        UINT offset=0;
+        for(const auto& format:{"gif","webp","jpg","png","ico","avif","pdf"}){
+            char actual[100]{};
+            require(SUCCEEDED(menu->GetCommandString(offset,GCS_VERBA,nullptr,actual,100)),"format canonical");
+            auto expected=std::string("format.")+format;
+            require(std::string(actual)=="fileconverter."+expected,"format order mismatch");
+            CMINVOKECOMMANDINFOEX click{};click.cbSize=sizeof(click);click.fMask=CMIC_MASK_UNICODE;click.lpVerb=MAKEINTRESOURCEA(offset);
+            require(SUCCEEDED(menu->InvokeCommand((CMINVOKECOMMANDINFO*)&click)),"format click");waitCapture(expected);
+            numeric.lpVerb=MAKEINTRESOURCEA(offset);
+            require(SUCCEEDED(menu->InvokeCommand(&numeric)),"ANSI numeric format click");waitCapture(expected);
+            offset++;
+        }
+        DestroyMenu(parent);
         // Explorer sets CMIC_MASK_UNICODE for numeric commands too. lpVerbW may be null.
+        snapshot.write();
         data=new Data({L"C:\\中文 路径\\a.png"});require(SUCCEEDED(init->Initialize(nullptr,data,nullptr)),"single initialize");data->Release();
         parent=CreatePopupMenu();require(HRESULT_CODE(menu->QueryContextMenu(parent,0,100,200,0))==3,"single refresh");
         wide.lpVerb=MAKEINTRESOURCEA(1);wide.lpVerbW=nullptr;
@@ -151,7 +189,7 @@ int wmain(int argc,wchar_t** argv){
         menu->Release();init->Release();factory->Release();
         if(std::wstring(argv[2])==L"cpp"){require(unload()==S_OK,"C++ unload reference leak");FreeLibrary(dll);}
         else require(unload()==S_FALSE,"AOT must never advertise unload");
-        std::cout<<"PASS: COM lifecycle, 20 repeated menus, mixed inputs, command boundaries, 64-bit Unicode/ANSI verbs, numeric verbs with Unicode flag, exact requested preset, corrupt configuration.\n";
+        std::cout<<"PASS: COM lifecycle, 20 repeated menus, mixed inputs, command boundaries, 64-bit Unicode/ANSI verbs, numeric verbs with Unicode flag, all seven image format request IDs, corrupt configuration.\n";
         CoUninitialize();return 0;
     }catch(const std::exception& error){std::cerr<<"FAIL: "<<error.what()<<" Win32="<<GetLastError()<<"\n";CoUninitialize();return 1;}
 }

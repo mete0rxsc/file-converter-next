@@ -124,7 +124,6 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     {
         try
         {
-            if (store.FilePath == AppPaths.SettingsFile && ShellRegistration.IsRegistered()) ShellRegistration.WriteSnapshot(Settings, Environment.ProcessPath!, L["Settings"]);
             if (command.RequestFile is { } path)
             {
                 var info = new FileInfo(path);
@@ -507,12 +506,12 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
         catch (Exception error) { Error(error); }
     }
-    private void PersistSettings()
+    private void PersistSettings(bool updateMenu = true)
     {
         if (settingsReadFailed) throw new InvalidDataException("原设置文件无法读取。请修复文件，或点击保存设置以备份原文件并保存当前设置。");
         Settings.Presets = Presets.ToList(); store.Save(Settings); L.Use(Settings.Language); ApplyAppearance(); OnPropertyChanged(nameof(L));
         try { CultureInfo.CurrentCulture = CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(Settings.Language); } catch (CultureNotFoundException) { }
-        if (store.FilePath == AppPaths.SettingsFile) ShellRegistration.WriteSnapshot(Settings, Environment.ProcessPath!, L["Settings"]);
+        if (updateMenu && store.FilePath == AppPaths.SettingsFile) ShellRegistration.WriteSnapshot(Settings, ShellRegistration.RegisteredExecutableOr(Environment.ProcessPath!), L["Settings"]);
         Status = "已保存：" + SettingsLocation;
     }
     private void ApplyAppearance()
@@ -521,7 +520,14 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     }
     [RelayCommand] private void ApplyShell()
     {
-        try { PersistSettings(); ShellRegistration.Apply(Settings, AppContext.BaseDirectory); Status = "菜单模式已应用，请重启仍加载旧 DLL 的 Explorer 或其他宿主。"; } catch (Exception e) { Error(e); }
+        try
+        {
+            ShellRegistration.ValidateRegistration(Settings, AppContext.BaseDirectory);
+            PersistSettings(false);
+            ShellRegistration.Register(Settings, AppContext.BaseDirectory, Environment.ProcessPath!, L["Settings"]);
+            Status = "菜单模式已应用。";
+        }
+        catch (Exception e) { Error(e); }
     }
     [RelayCommand] private void UnregisterShell()
     {

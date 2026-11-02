@@ -19,7 +19,7 @@
       "fileconverter.core": {
         "type": "Project",
         "dependencies": {
-          "FileConverter.Shell.Protocol": "[3.0.1, )"
+          "FileConverter.Shell.Protocol": "[3.0.2, )"
         }
       },
       "fileconverter.shell.protocol": {

@@ -33,4 +33,5 @@ internal static unsafe partial class Native
     [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)] internal static partial uint GetModuleFileNameW(nint module, char* buffer, uint size);
     [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)] internal static partial bool GetModuleHandleExW(uint flags, nint address, out nint module);
+    [LibraryImport("kernel32.dll")] internal static partial int WideCharToMultiByte(uint codePage, uint flags, char* input, int inputLength, byte* output, int outputLength, nint defaultCharacter, nint usedDefaultCharacter);
 }

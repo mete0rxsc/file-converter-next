@@ -1,4 +1,4 @@
-param([string]$Msi=(Join-Path $PSScriptRoot '..\installer\bin\x64\Release\FileConverter-3.0.1-win-x64.msi'))
+param([string]$Msi=(Join-Path $PSScriptRoot '..\installer\bin\x64\Release\FileConverter-3.0.2-win-x64.msi'))
 $ErrorActionPreference='Stop'
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $msiFile=(Resolve-Path -LiteralPath $Msi).Path
@@ -7,8 +7,8 @@ $dataDirectory=Join-Path $env:LOCALAPPDATA 'FileConverter'
 $settingsFile=Join-Path $dataDirectory 'settings.json'
 $menuFile=Join-Path $dataDirectory 'menu.bin'
 $handler='Software\Classes\*\shellex\ContextMenuHandlers\FileConverter.Modern'
-$aotClass='Software\Classes\CLSID\{61699489-9EEA-43D6-BF5B-32DB32B7A101}'
-$cppClass='Software\Classes\CLSID\{61699489-9EEA-43D6-BF5B-32DB32B7A102}'
+$aotClass='Software\Classes\CLSID\{61699489-9EEA-43D6-BF5B-32DB32B7A201}'
+$cppClass='Software\Classes\CLSID\{61699489-9EEA-43D6-BF5B-32DB32B7A202}'
 if(Test-Path -LiteralPath $installDirectory){throw 'Installer acceptance requires an absent target directory; existing installation is preserved.'}
 foreach($key in @($handler,$aotClass,$cppClass)){
     $existing=[Microsoft.Win32.Registry]::CurrentUser.OpenSubKey($key)
@@ -46,7 +46,7 @@ try{
     Assert-True (Test-Path -LiteralPath $exe) 'Installed executable exists'
     $installedHandler=Registry-Value $handler
     Write-Host ('Installed handler: '+$installedHandler)
-    Assert-True ($installedHandler -eq '{61699489-9EEA-43D6-BF5B-32DB32B7A101}') 'Default menu uses NativeAOT'
+    Assert-True ($installedHandler -eq '{61699489-9EEA-43D6-BF5B-32DB32B7A201}') 'Default menu uses NativeAOT'
     foreach($mode in @('NativeCpp','NativeAot')){
         $configuration=Get-Content -Raw -LiteralPath $settingsFile | ConvertFrom-Json
         $configuration.Shell.Mode=$mode
